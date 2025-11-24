@@ -4,7 +4,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
-public class Sorter extends SubsystemBase {
+public class Sorter {
     Servo servo;
     double pos1=0.45;
     double pos2=1;

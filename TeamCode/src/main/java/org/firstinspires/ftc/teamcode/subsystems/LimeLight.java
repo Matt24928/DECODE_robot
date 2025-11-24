@@ -36,8 +36,9 @@ public class LimeLight {
 
         public double[] comparare ()
         {
-
-        return {a};
+        int a=0;
+        int b=0;
+        return new double[] {a,b};
         }
 
 

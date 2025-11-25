@@ -5,6 +5,8 @@ import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
+import java.util.List;
+
 @Autonomous
 public class LimeLight {
     private Limelight3A limelight3A;
@@ -32,14 +34,29 @@ public class LimeLight {
         double x = follower.getPose().getX() + dy * Math.cos(theta) - dx * Math.sin(theta);
         double y = follower.getPose().getY() + dy * Math.sin(theta) + dx * Math.cos(theta);
         return new double[] {x,y};
-    }
+    }//
+        public double distanta (double x,double y){
+        double cx=23;
+        double cy=22;
+        double d=Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+        return d;
+        }//calculeaza distanta de al un punct pe harta la obiect
+/*
+        public int indice(List<double[]> dist){
+        double i,c=0,DistMax=;
+        int count = dist.size();
+        for (i = 0; i <count; i++)
+            {
+                if (DistMax<)
+                {
 
-        public double[] comparare ()
-        {
-        int a=0;
-        int b=0;
-        return new double[] {a,b};
-        }
+                }
+            }
+        }//am nevoie de traiectorie
+    //e ora 2;30 si eu deja nu mai pot...
+
+
+
 
 
 

@@ -2,15 +2,20 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Autonomous
 public class LimeLight {
-    private Limelight3A limelight3A;
+        private Limelight3A limelight;
         private double x,y;
+        public double huh;
 
 
     //ty = llResult.getTy()     tx = llResult.getTx()
@@ -18,9 +23,33 @@ public class LimeLight {
             double theta = follower.getPose().getHeading();
             return (theta+Math.toRadians(tx));
         }
-        public double[] coordonate(float tx, float ty) {
+        public List<double[]> RelativeCoords() {
 
-            double alpha= 30;
+            LLResult result = limelight.getLatestResult();
+
+            if (result == null || !result.isValid()) {
+                return new ArrayList<>();   // return empty list if no detections
+            }
+
+            List<LLResultTypes.DetectorResult> detections = result.getDetectorResults();
+
+            List<double[]> points = new ArrayList<>();
+
+            for (int i = 0; i < detections.size(); i++) {
+                LLResultTypes.DetectorResult det = detections.get(i);
+
+                double tx = det.getTargetXDegrees();
+                double ty = det.getTargetYDegrees();
+
+                double[] xy = coordonate(tx, ty);
+                points.add(xy);
+            }
+
+            return points;
+        }
+    public double[] coordonate(double tx, double ty) {
+
+            double alpha= 30;//unghiu dintre camera si sol
             double c=1;
             double h=10;
 
@@ -45,7 +74,7 @@ public class LimeLight {
             }
 
             return result;
-        }//calculeaza distanta de al un punct pe harta la obiect
+        }//calculeaza distanta cea mai mica de la un punct pe harta la obiect
 
         public double[] coord(List<double[]> coord){
             double[] result =new double[coord.size()];
@@ -74,6 +103,8 @@ public class LimeLight {
 
         //am nevoie de traiectorie
     //e ora 2;30 si eu deja nu mai pot...
+
+
 
 
 

@@ -10,13 +10,7 @@ import java.util.List;
 @Autonomous
 public class LimeLight {
     private Limelight3A limelight3A;
-    public double dx;
-    public double dy;
-
-
-        public double x,y;
-        public double heading;
-
+        private double x,y;
 
 
     //ty = llResult.getTy()     tx = llResult.getTx()

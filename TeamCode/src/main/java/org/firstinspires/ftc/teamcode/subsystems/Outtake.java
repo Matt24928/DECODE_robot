@@ -12,6 +12,7 @@ public class Outtake {
     DcMotor motor_shooter_1;
     DcMotor motor_shooter_2;
     NormalizedColorSensor colorSensor1;
+    NormalizedColorSensor colorSensor2;
     Servo servo;
 
     public enum DetectedColor {
@@ -20,11 +21,12 @@ public class Outtake {
         UNKNOWN
     }
     public Outtake (HardwareMap hw){
-        //motor_shooter_1 = hw.dcMotor.get("MotorShooter_1");
-        //motor_shooter_2 = hw.dcMotor.get("MotorShooter_2");
-        //servo = hw.servo.get("Servo_1");
+        motor_shooter_1 = hw.dcMotor.get("MotorShooter_1");
+        motor_shooter_2 = hw.dcMotor.get("MotorShooter_2");
+        servo = hw.servo.get("Servo_1");
 
         colorSensor1 = hw.get(NormalizedColorSensor.class,"SensorColor_1");
+        colorSensor2 = hw.get(NormalizedColorSensor.class, "SensorColor_2");
     }
 
 
@@ -37,16 +39,40 @@ public class Outtake {
         normBlue = colors.blue / colors.alpha;
         normPurple = (2*normRed + normBlue) / 2/colors.alpha;
 
-        telemetry.addData("red", normRed);
-        telemetry.addData("green",normGreen);
-        telemetry.addData("blue", normBlue);
-        telemetry.addData("purple", normPurple);
+        telemetry.addData("red_1", normRed);
+        telemetry.addData("green_1",normGreen);
+        telemetry.addData("blue_1", normBlue);
+        telemetry.addData("purple_1", normPurple);
         /*
         Need to add good values that will give good accuracy to the color!!!
          */
 
 
-        return DetectedColor.UNKNOWN; // UNKNOWN is bullshit, I need to add the colors needed: green and purple
+        return DetectedColor.UNKNOWN; // Idk if we need something returned, soooo I'll leave it like that
+
+
+
+    }
+
+    public DetectedColor getDetectedColor2(Telemetry telemetry){
+        NormalizedRGBA colors = colorSensor1.getNormalizedColors();
+
+        float normRed, normGreen, normBlue, normPurple;
+        normRed = colors.red / colors.alpha;
+        normGreen = colors.green / colors.alpha;
+        normBlue = colors.blue / colors.alpha;
+        normPurple = (2*normRed + normBlue) / 2/colors.alpha;
+
+        telemetry.addData("red_2", normRed);
+        telemetry.addData("green_2",normGreen);
+        telemetry.addData("blue_2", normBlue);
+        telemetry.addData("purple_2", normPurple);
+        /*
+        Need to add good values that will give good accuracy to the color!!!
+         */
+
+
+        return DetectedColor.UNKNOWN; // We don't really need something returned at the momennt
 
 
 

@@ -12,13 +12,16 @@ import org.firstinspires.ftc.teamcode.subsystems.Outtake;
 public class ColorSensorTest extends OpMode {
 
     Outtake sensor_1;
+    Outtake sensor_2;
 
     @Override
     public void init() {
         sensor_1 = new Outtake(hardwareMap);
+        sensor_2 = new Outtake(hardwareMap);
     }
 
     public void loop(){
         sensor_1.getDetectedColor1(telemetry);
+        sensor_2.getDetectedColor2(telemetry);
     }
 }

@@ -2,13 +2,13 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Autonomous
@@ -16,7 +16,7 @@ public class LimeLight {
         private Limelight3A limelight;
         private double x,y;
         public double huh;
-
+        public List<Pose> VectorPozs;
         //ty = llResult.getTy()     tx = llResult.getTx()
         public double HeadingPerpend(double tx){
             double theta = follower.getPose().getHeading();
@@ -40,13 +40,13 @@ public class LimeLight {
                 double tx = det.getTargetXDegrees();
                 double ty = det.getTargetYDegrees();
 
-                double[] xy = coordonate(tx, ty);
+                double[] xy = coordonate (tx, ty);
                 points.add(xy);
             }
 
             return points;
         }
-    public double[] coordonate(double tx, double ty) {
+        public double[] coordonate(double tx, double ty) {
 
             double alpha= 30;//unghiu dintre camera si sol
             double c=1;
@@ -57,8 +57,11 @@ public class LimeLight {
             double theta = follower.getPose().getHeading();
             double x = follower.getPose().getX() + dy * Math.cos(theta) - dx * Math.sin(theta);
             double y = follower.getPose().getY() + dy * Math.sin(theta) + dx * Math.cos(theta);
+
             return new double[] {x,y};
         }//
+
+
         public double[] distante (List <double[]>coord){
             double[] result =new double[coord.size()];
             double cx=23;

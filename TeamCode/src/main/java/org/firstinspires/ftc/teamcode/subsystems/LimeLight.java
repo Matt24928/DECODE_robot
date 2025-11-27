@@ -17,8 +17,7 @@ public class LimeLight {
         private double x,y;
         public double huh;
 
-
-    //ty = llResult.getTy()     tx = llResult.getTx()
+        //ty = llResult.getTy()     tx = llResult.getTx()
         public double HeadingPerpend(double tx){
             double theta = follower.getPose().getHeading();
             return (theta+Math.toRadians(tx));

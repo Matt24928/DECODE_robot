@@ -15,6 +15,9 @@ public class Outtake {
     NormalizedColorSensor colorSensor2;
     Servo servo;
 
+    float normRed_1, normGreen_1, normBlue_1, normPurple_1;
+    float normRed_2, normGreen_2, normBlue_2, normPurple_2;
+
     public enum DetectedColor {
         GREEN,
         PURPLE,
@@ -33,16 +36,16 @@ public class Outtake {
     public DetectedColor getDetectedColor1(Telemetry telemetry){
         NormalizedRGBA colors = colorSensor1.getNormalizedColors();
 
-        float normRed, normGreen, normBlue, normPurple;
-        normRed = colors.red / colors.alpha;
-        normGreen = colors.green / colors.alpha;
-        normBlue = colors.blue / colors.alpha;
-        normPurple = (2*normRed + normBlue) / 2/colors.alpha;
 
-        telemetry.addData("red_1", normRed);
-        telemetry.addData("green_1",normGreen);
-        telemetry.addData("blue_1", normBlue);
-        telemetry.addData("purple_1", normPurple);
+        normRed_1 = colors.red / colors.alpha;
+        normGreen_1 = colors.green / colors.alpha;
+        normBlue_1 = colors.blue / colors.alpha;
+        normPurple_1 = (2*normRed_1 + normBlue_1) / 2/colors.alpha;
+
+        telemetry.addData("red_1", normRed_1);
+        telemetry.addData("green_1",normGreen_1);
+        telemetry.addData("blue_1", normBlue_1);
+        telemetry.addData("purple_1", normPurple_1);
         /*
         Need to add good values that will give good accuracy to the color!!!
          */
@@ -57,16 +60,16 @@ public class Outtake {
     public DetectedColor getDetectedColor2(Telemetry telemetry){
         NormalizedRGBA colors = colorSensor1.getNormalizedColors();
 
-        float normRed, normGreen, normBlue, normPurple;
-        normRed = colors.red / colors.alpha;
-        normGreen = colors.green / colors.alpha;
-        normBlue = colors.blue / colors.alpha;
-        normPurple = (2*normRed + normBlue) / 2/colors.alpha;
 
-        telemetry.addData("red_2", normRed);
-        telemetry.addData("green_2",normGreen);
-        telemetry.addData("blue_2", normBlue);
-        telemetry.addData("purple_2", normPurple);
+        normRed_2 = colors.red / colors.alpha;
+        normGreen_2 = colors.green / colors.alpha;
+        normBlue_2 = colors.blue / colors.alpha;
+        normPurple_2 = (2*normRed_2 + normBlue_2) / 2/colors.alpha;
+
+        telemetry.addData("red_2", normRed_2);
+        telemetry.addData("green_2",normGreen_2);
+        telemetry.addData("blue_2", normBlue_2);
+        telemetry.addData("purple_2", normPurple_2);
         /*
         Need to add good values that will give good accuracy to the color!!!
          */
@@ -77,6 +80,38 @@ public class Outtake {
 
 
     }
+
+
+    public boolean CheckForGreen(int sensorNumber) {
+        float greenValue = (sensorNumber == 1) ? normGreen_1 : normGreen_2;
+        float redValue   = (sensorNumber == 1) ? normRed_1   : normRed_2;
+
+        // Idk, I THINK this needs to be adjusted after checking the real values?
+        boolean isGreen = greenValue > redValue && greenValue > 0.4;
+
+        if(isGreen){
+            if(sensorNumber == 1) {Shooter_ON_1();}
+            else {Shooter_ON_2();}
+        }
+
+        return isGreen;
+    }
+
+    public boolean CheckForPurple(int sensorNumber) {
+        float purpleValue = (sensorNumber == 1) ? normPurple_1 : normPurple_2;
+        float greenValue  = (sensorNumber == 1) ? normGreen_1  : normGreen_2;
+
+        // I think the same here, idk please check guys
+        boolean isPurple = purpleValue > greenValue && purpleValue > 0.4;
+
+        if(isPurple){
+            if(sensorNumber == 1) {Shooter_ON_1();}
+            else {Shooter_ON_2();}
+        }
+
+        return isPurple;
+    }
+
 
 
     void Shooter_ON_1() {

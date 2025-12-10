@@ -7,7 +7,7 @@ public class PTO {
     Servo pto1;
     Servo pto2;
     public PTO(HardwareMap hw) {//PTO= Power Take Off
-        pto1 = hw.servo.get("servoPTO1");
+        pto1 = hw.servo.get("servoPTO1");+
         pto2 = hw.servo.get("servoPTO2");
     }
     public void PtoN()//N de la Normal; Sa schimbam valorile ca nu cred ca-s bune

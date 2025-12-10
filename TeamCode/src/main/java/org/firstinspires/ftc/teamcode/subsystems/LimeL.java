@@ -20,28 +20,11 @@ public class LimeL  extends SubsystemBase {
     private Limelight3A limelight3A;
     private Telemetry telemetry;
 
-    public LimeL(HardwareMap hardwareMap, Telemetry telemetry) {
-        limelight3A = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight3A.pipelineSwitch(0);   // pipeline default
-        limelight3A.setPollRateHz(100);  // update rapid
-        limelight3A.start();             // pornește camera
-
-    } private LLResult getResult() {
-        LLResult r = limelight3A.getLatestResult();
-        return (r != null && r.isValid()) ? r : null;
-    }
 
 
-    public void periodic() {
-        LLResult result = getResult();
-        limelight3A = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight3A.pipelineSwitch(0);//0 este mov si 1 este verde ca asa vreau eu nu cum a zis omu de pe tutorial ca e blue si red , gen swtich to pipeline number 1
-        limelight3A.setPollRateHz(100); // This sets how often we ask Limelight for data (100 times per second)
-        limelight3A.start(); // This tells Limelight to start looking!
-        result.getPipelineIndex();
 
 
-    }
+
 
 
     public void loop() {

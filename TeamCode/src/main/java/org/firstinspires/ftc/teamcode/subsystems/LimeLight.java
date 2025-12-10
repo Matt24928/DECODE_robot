@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
 import com.arcrobotics.ftclib.command.SubsystemBase;
@@ -14,8 +13,9 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
+import java.util.OptionalDouble;
 
 @Autonomous
 public class LimeLight extends SubsystemBase {
@@ -89,7 +89,10 @@ public class LimeLight extends SubsystemBase {
             }
         return RelativeCoords();
         }//returneaza toate coordonatelede la obiecte de culoare pipeline specifica
-        public double[] distante (List <double[]>coord,double cx, double cy){
+        public double[] distante (List <double[]>coord,Pose poz){
+            double cx=poz.getX();
+            double cy=poz.getY();
+
             double[] result =new double[coord.size()];
             int sz = coord.size();
 
@@ -134,8 +137,33 @@ public class LimeLight extends SubsystemBase {
                     }
                 }
         return (coord.get(ind));
-        }//calculeaza coord celui mai apropiat obj fata de un set de coord    Asi utilizao cand ma duc undeva si am nevoie de o anumita minge cu o anumita culoare(tre sa setez si pipelineindexu or smth)
-        public Pose coordClose
+        }//calculeaza coord celui mai apropiat obj fata de un set de coord    A,si utilizeazo cand ma duc undeva si am nevoie de o anumita minge cu o anumita culoare(tre sa setez si pipelineindexu or smth)
+        /*metoda ajutatoare ca am nev*/
+        private int pozitie_la_minim(double[] numar){
+            OptionalDouble min = Arrays.stream(numar).min();
+            int c=0;
+            int[] u = new int[numar.length];
+            for (int i=0;i<numar.length;i++)
+            {
+                if (min.getAsDouble()==numar[i])
+                {
+                u[c]=i;
+                c++;
+                }
+            }
+            return u[0];
+        }
+        public Pose coordClose(Pose pozitie){
+            List<double[]> coord = RelativeCoords();
+            List<Pose> cord = CoordToPose(coord);
+            double[] mort = new double[coord.size()];
+            for (int i=0;i<cord.size();i++)
+            {   Pose Poz = cord.get(i);
+                double d = Poz.distanceFrom(follower.getPose()) + Poz.distanceFrom(pozitie);
+                mort [i]=d;
+            }
+            return cord.get(pozitie_la_minim(mort));
+        } //da poze-ul la care tre sa se duca robotul in auto, daca nu conteaza culoarea
     public Pose close_obj (List<double[]> coord) {
         double[] NuMaiPoooooottt = cord(RelativeCoords());
         return new Pose(NuMaiPoooooottt[0],NuMaiPoooooottt[1],NuMaiPoooooottt[2]);

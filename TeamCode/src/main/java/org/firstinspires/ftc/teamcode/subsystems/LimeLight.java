@@ -21,6 +21,7 @@ import java.util.List;
 public class LimeLight extends SubsystemBase {
         private Limelight3A limelight;
         private double x,y;
+        LLResult result = getResult();
         public LimeLight(HardwareMap hardwareMap, Telemetry telemetry) {
             limelight = hardwareMap.get(Limelight3A.class, "limelight");
             limelight.pipelineSwitch(0);   // pipeline default
@@ -32,34 +33,26 @@ public class LimeLight extends SubsystemBase {
             return (r != null && r.isValid()) ? r : null;
         }
         public void periodic() {
-            LLResult result = getResult();
-            limelight = hardwareMap.get(Limelight3A.class, "limelight");
-            limelight.pipelineSwitch(0);//0 este mov si 1 este verde ca asa vreau eu nu cum a zis omu de pe tutorial ca e blue si red , gen swtich to pipeline number 1
-            limelight.setPollRateHz(100); // This sets how often we ask Limelight for data (100 times per second)
-            limelight.start(); // This tells Limelight to start looking!
             result.getPipelineIndex();
         }
-
-
-
 
         //ty = llResult.getTy()     tx = llResult.getTx()
         public double HeadingPerpend(double tx){
             double theta = follower.getPose().getHeading();
             return (theta+Math.toRadians(tx));
         }
-            public double[] coordonate(double tx, double ty) {
+        public double[] coordonate(double tx, double ty) {
 
-                double alpha= 30;//unghiu dintre camera si sol
-                double c=1;
-                double h=10;
+            double alpha= 30;//unghiu dintre camera si sol
+            double c=1;
+            double h=10;
 
-                double dy = h / Math.tan(Math.toRadians( ty + alpha)) * c;//c e constanta pt cm->inchi daca folosim cm pentru h
-                double dx = -Math.tan(Math.toRadians(tx)) * dy;
-                double theta = follower.getPose().getHeading();
-                double x = follower.getPose().getX() + dy * Math.cos(theta) - dx * Math.sin(theta);
-                double y = follower.getPose().getY() + dy * Math.sin(theta) + dx * Math.cos(theta);
-                return new double[] {x,y, theta+ Math.toRadians(tx)};
+            double dy = h / Math.tan(Math.toRadians( ty + alpha)) * c;//c e constanta pt cm->inchi daca folosim cm pentru h
+            double dx = -Math.tan(Math.toRadians(tx)) * dy;
+            double theta = follower.getPose().getHeading();
+            double x = follower.getPose().getX() + dy * Math.cos(theta) - dx * Math.sin(theta);
+            double y = follower.getPose().getY() + dy * Math.sin(theta) + dx * Math.cos(theta);
+            return new double[] {x,y, theta+ Math.toRadians(tx)};
             }
         public List<double[]> RelativeCoords() {
 
@@ -84,11 +77,20 @@ public class LimeLight extends SubsystemBase {
             }
 
             return points;
-        }
-        public double[] distante (List <double[]>coord){
+        }//returneaza toate coordonatelede la obiecte
+        public List<double[]> pozitie_culori(int i){
+            switch(i) {
+                case 1:
+                    limelight.pipelineSwitch(1);
+                case 2:
+                    limelight.pipelineSwitch(2);
+                case 3:
+                    limelight.pipelineSwitch(3);
+            }
+        return RelativeCoords();
+        }//returneaza toate coordonatelede la obiecte de culoare pipeline specifica
+        public double[] distante (List <double[]>coord,double cx, double cy){
             double[] result =new double[coord.size()];
-            double cx=23;
-            double cy=22;//set de coordonate punct de unde avem voie sa aruncam
             int sz = coord.size();
 
             for (int i=0;sz==i;i++) {
@@ -99,8 +101,16 @@ public class LimeLight extends SubsystemBase {
             }
 
             return result;
-        }//calculeaza distanta cea mai mica de la un punct pe harta la obiect
-
+        }//calculeaza distantele
+        private List<Pose> CoordToPose(List<double[]>coord){
+            List<Pose> coor = new ArrayList<>();
+            for(int i=0;i<coord.size();i++)
+            {
+                double[] matematica = coord.get(i);
+                coor.add(new Pose(matematica[0],matematica[1],Math.toRadians(matematica[0])+follower.getHeading()));
+            }
+            return coor;
+        }//transforma din lista de coord in lista de vectori de pozitie
         public double[] cord(List<double[]> coord){
             double[] result =new double[coord.size()];
             double cx=23;
@@ -124,19 +134,12 @@ public class LimeLight extends SubsystemBase {
                     }
                 }
         return (coord.get(ind));
-        }//calculeaza coord celui mai apropiat obj fata de un set de coord
+        }//calculeaza coord celui mai apropiat obj fata de un set de coord    Asi utilizao cand ma duc undeva si am nevoie de o anumita minge cu o anumita culoare(tre sa setez si pipelineindexu or smth)
+        public Pose coordClose
     public Pose close_obj (List<double[]> coord) {
         double[] NuMaiPoooooottt = cord(RelativeCoords());
         return new Pose(NuMaiPoooooottt[0],NuMaiPoooooottt[1],NuMaiPoooooottt[2]);
     }//pozitia celui mai apropiat dintre obiecte
-
-
-
-
-
-
-
-
         /*
 
 
@@ -146,4 +149,3 @@ public class LimeLight extends SubsystemBase {
 
          */
 }
-

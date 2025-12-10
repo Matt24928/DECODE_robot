@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
+import com.arcrobotics.ftclib.command.SubsystemBase;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
@@ -9,14 +10,15 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Autonomous
-public class LimeLight {
+public class LimeLight extends SubsystemBase {
         private Limelight3A limelight;
         private double x,y;
         public double huh;
-        public List<Pose> VectorPozs;
+
         //ty = llResult.getTy()     tx = llResult.getTx()
         public double HeadingPerpend(double tx){
             double theta = follower.getPose().getHeading();
@@ -40,7 +42,7 @@ public class LimeLight {
                 double tx = det.getTargetXDegrees();
                 double ty = det.getTargetYDegrees();
 
-                double[] xy = coordonate (tx, ty);
+                double[] xy = coordonate(tx, ty);
                 points.add(xy);
             }
 
@@ -57,10 +59,8 @@ public class LimeLight {
             double theta = follower.getPose().getHeading();
             double x = follower.getPose().getX() + dy * Math.cos(theta) - dx * Math.sin(theta);
             double y = follower.getPose().getY() + dy * Math.sin(theta) + dx * Math.cos(theta);
-
-            return new double[] {x,y};
+            return new double[] {x,y, theta+tx};
         }//
-
 
         public double[] distante (List <double[]>coord){
             double[] result =new double[coord.size()];
@@ -78,7 +78,7 @@ public class LimeLight {
             return result;
         }//calculeaza distanta cea mai mica de la un punct pe harta la obiect
 
-        public double[] coord(List<double[]> coord){
+        public double[] cord(List<double[]> coord){
             double[] result =new double[coord.size()];
             double cx=23;
             double cy=22;//set de coordonate punct de unde avem voie sa aruncam
@@ -90,9 +90,9 @@ public class LimeLight {
                 double d=Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
                 result[i]=d;
             }
-            double c=0,ind=0,DistMin=1000000000;
             int i;
-            int count = result.length;
+            double c=0,DistMin=1000000000;
+            int ind=0,count = result.length;
             for (i = 0; i <count; i++)
                 {
                     if (result[i] < DistMin)
@@ -100,11 +100,12 @@ public class LimeLight {
                         ind = i;
                     }
                 }
-        return (coord.get(i));
+        return (coord.get(ind));
         }//calculeaza coord celui mai apropiat obj fata de un set de coord
-
-        //am nevoie de traiectorie
-    //e ora 2;30 si eu deja nu mai pot...
+    public Pose close_obj (List<double[]> coord) {
+        double[] NuMaiPoooooottt = cord(RelativeCoords());
+        return new Pose(NuMaiPoooooottt[0],NuMaiPoooooottt[1],NuMaiPoooooottt[2]);
+    }//pozitia celui mai apropiat dintre obiecte
 
 
 

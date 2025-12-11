@@ -78,6 +78,41 @@ public class LimeLight extends SubsystemBase {
 
             return points;
         }//returneaza toate coordonatelede la obiecte
+        public List<double[]> RelativeCoords2(int y) {
+
+            LLResult result = limelight.getLatestResult();
+
+            if (result == null || !result.isValid()) {
+                return new ArrayList<>();   // return empty list if no detections
+            }
+
+            List<LLResultTypes.DetectorResult> detections = result.getDetectorResults();
+
+            List<double[]> points = new ArrayList<>();
+
+            for (int i = 0; i < detections.size(); i++) {
+                LLResultTypes.DetectorResult det = detections.get(i);
+                double tx, ty;
+                double[] xy;
+                switch (y) {
+                    case 1:
+                        if (det.getClassName() == "green"){
+                        tx = det.getTargetXDegrees();
+                        ty = det.getTargetYDegrees();
+                        xy = coordonate(tx, ty);
+                        points.add(xy);}
+
+                    case 2:
+                        if (det.getClassName() == "purple"){
+                            tx = det.getTargetXDegrees();
+                            ty = det.getTargetYDegrees();
+                            xy = coordonate(tx, ty);
+                            points.add(xy);}
+                }
+            }
+
+            return points;
+        }//returneaza coord obj cul. verd
         public List<double[]> pozitie_culori(int i){
             switch(i) {
                 case 1:
@@ -114,7 +149,7 @@ public class LimeLight extends SubsystemBase {
             }
             return coor;
         }//transforma din lista de coord in lista de vectori de pozitie
-        public double[] cord(List<double[]> coord){
+        public double[] devmin(List<double[]> coord){
             double[] result =new double[coord.size()];
             double cx=23;
             double cy=22;//set de coordonate punct de unde avem voie sa aruncam
@@ -164,10 +199,14 @@ public class LimeLight extends SubsystemBase {
             }
             return cord.get(pozitie_la_minim(mort));
         } //da poze-ul la care tre sa se duca robotul in auto, daca nu conteaza culoarea
-    public Pose close_obj (List<double[]> coord) {
-        double[] NuMaiPoooooottt = cord(RelativeCoords());
-        return new Pose(NuMaiPoooooottt[0],NuMaiPoooooottt[1],NuMaiPoooooottt[2]);
-    }//pozitia celui mai apropiat dintre obiecte
+        public Pose close_obj (int i) {
+            double[] NuMaiPoooooottt = new double[0];
+            if (i == 0)
+                NuMaiPoooooottt = devmin(RelativeCoords());
+            else
+                NuMaiPoooooottt = devmin(RelativeCoords2(i));
+            //pozitia celui mai apropiat dintre obiecte cu 0 avem toate obiectele cu 1 avem green si pe 2 avem purple
+            return new Pose(NuMaiPoooooottt[0], NuMaiPoooooottt[1], NuMaiPoooooottt[2]);
         /*
 
 
@@ -176,4 +215,5 @@ public class LimeLight extends SubsystemBase {
         PathChain chain = follower.pathBuilder().addPath(new BezierLine(Start,Obiect)).build();
 
          */
+        }
 }

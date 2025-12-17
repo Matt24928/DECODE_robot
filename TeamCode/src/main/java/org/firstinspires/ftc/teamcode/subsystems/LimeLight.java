@@ -15,27 +15,31 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.OptionalDouble;
 
 @Autonomous
 public class LimeLight extends SubsystemBase {
         private Limelight3A limelight;
-        private double x,y;
-        LLResult result = getResult();
+        LLResult result;
+        private int pipeline = 0;
         public LimeLight(HardwareMap hardwareMap, Telemetry telemetry) {
             limelight = hardwareMap.get(Limelight3A.class, "limelight");
             limelight.pipelineSwitch(0);   // pipeline default
             limelight.setPollRateHz(100);  // update rapid
             limelight.start();             // pornește camera
         }
+
+
         private LLResult getResult() {
             LLResult r = limelight.getLatestResult();
             return (r != null && r.isValid()) ? r : null;
         }
+        @Override
         public void periodic() {
-            result.getPipelineIndex();
+            result = getResult();
         }
-
+        private LLResult res() { return result; }
         //ty = llResult.getTy()     tx = llResult.getTx()
         public double HeadingPerpend(double tx){
             double theta = follower.getPose().getHeading();
@@ -56,7 +60,7 @@ public class LimeLight extends SubsystemBase {
             }
         public List<double[]> RelativeCoords() {
 
-            LLResult result = limelight.getLatestResult();
+            LLResult result = res();
 
             if (result == null || !result.isValid()) {
                 return new ArrayList<>();   // return empty list if no detections
@@ -80,7 +84,7 @@ public class LimeLight extends SubsystemBase {
         }//returneaza toate coordonatelede la obiecte
         public List<double[]> RelativeCoords2(int y) {
 
-            LLResult result = limelight.getLatestResult();
+            LLResult result = res();
 
             if (result == null || !result.isValid()) {
                 return new ArrayList<>();   // return empty list if no detections
@@ -96,34 +100,30 @@ public class LimeLight extends SubsystemBase {
                 double[] xy;
                 switch (y) {
                     case 1:
-                        if (det.getClassName() == "green"){
-                        tx = det.getTargetXDegrees();
-                        ty = det.getTargetYDegrees();
-                        xy = coordonate(tx, ty);
-                        points.add(xy);}
-
-                    case 2:
-                        if (det.getClassName() == "purple"){
+                        if (Objects.equals(det.getClassName(), "green")){
                             tx = det.getTargetXDegrees();
                             ty = det.getTargetYDegrees();
                             xy = coordonate(tx, ty);
                             points.add(xy);}
+                        break;
+
+                    case 2:
+                        if (Objects.equals(det.getClassName(), "purple")){
+                            tx = det.getTargetXDegrees();
+                            ty = det.getTargetYDegrees();
+                            xy = coordonate(tx, ty);
+                            points.add(xy);}
+                        break;
                 }
             }
 
             return points;
         }//returneaza coord obj cul. verd
-        public List<double[]> pozitie_culori(int i){
-            switch(i) {
-                case 1:
-                    limelight.pipelineSwitch(1);
-                case 2:
-                    limelight.pipelineSwitch(2);
-                case 3:
-                    limelight.pipelineSwitch(3);
-            }
-        return RelativeCoords();
-        }//returneaza toate coordonatelede la obiecte de culoare pipeline specifica
+        public void changepipeline(int i){
+            if(i == pipeline) return;
+            pipeline=i;
+            limelight.pipelineSwitch(i);
+        }//schimba pipeline
         public double[] distante (List <double[]>coord,Pose poz){
             double cx=poz.getX();
             double cy=poz.getY();
@@ -131,15 +131,15 @@ public class LimeLight extends SubsystemBase {
             double[] result =new double[coord.size()];
             int sz = coord.size();
 
-            for (int i=0;sz==i;i++) {
-                x=coord.get(i)[0];
-                y=coord.get(i)[1];
+            for (int i=0;sz>i;i++) {
+                double x=coord.get(i)[0];
+                double y=coord.get(i)[1];
                 double d=Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
                 result[i]=d;
             }
 
             return result;
-        }//calculeaza distantele
+        }/*calculeaza distantele*/
         private List<Pose> CoordToPose(List<double[]>coord){
             List<Pose> coor = new ArrayList<>();
             for(int i=0;i<coord.size();i++)
@@ -155,9 +155,9 @@ public class LimeLight extends SubsystemBase {
             double cy=22;//set de coordonate punct de unde avem voie sa aruncam
             int sz = coord.size();
 
-            for (int i=0;sz==i;i++) {
-                x=coord.get(i)[0];
-                y=coord.get(i)[1];
+            for (int i=0;sz>i;i++) {
+                double x = coord.get(i)[0];
+                double y = coord.get(i)[1];
                 double d=Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
                 result[i]=d;
             }
@@ -173,7 +173,7 @@ public class LimeLight extends SubsystemBase {
                 }
         return (coord.get(ind));
         }//calculeaza coord celui mai apropiat obj fata de un set de coord    A,si utilizeazo cand ma duc undeva si am nevoie de o anumita minge cu o anumita culoare(tre sa setez si pipelineindexu or smth)
-        /*metoda ajutatoare ca am nev*/
+        /*metoda ajutatoare ca am nev*/        /*PROBLEMA*/
         private int pozitie_la_minim(double[] numar){
             OptionalDouble min = Arrays.stream(numar).min();
             int c=0;
@@ -207,13 +207,26 @@ public class LimeLight extends SubsystemBase {
                 NuMaiPoooooottt = devmin(RelativeCoords2(i));
             //pozitia celui mai apropiat dintre obiecte cu 0 avem toate obiectele cu 1 avem green si pe 2 avem purple
             return new Pose(NuMaiPoooooottt[0], NuMaiPoooooottt[1], NuMaiPoooooottt[2]);
-        /*
-
-
-            Pose Obiect = new Pose(x,y,theta+Math.toRadians(tx));
-        Pose Start = follower.getPose();
-        PathChain chain = follower.pathBuilder().addPath(new BezierLine(Start,Obiect)).build();
-
-         */
         }
+
+    //AICI VINE APRIL TAGU
+    //IMPORTANT********************************************
+    // DACA SE CITESC APRIL TAGURI MULTIPLE DE CULORI, TREBUIE VERIFICAT!!!!!!!
+        private List<LLResultTypes.FiducialResult> getTags() {
+            changepipeline(3); //tre sa schimb ca nush pipelinu folosit
+            LLResult r = res();
+            if (r == null || !r.isValid()) return new ArrayList<>();
+            return r.getFiducialResults();
+
+        }
+
+        public List<String> collor() {
+
+
+
+
+
+
+        return null;
+        }//returneaza culorile necesare
 }

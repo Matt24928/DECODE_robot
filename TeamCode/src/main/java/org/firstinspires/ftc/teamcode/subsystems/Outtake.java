@@ -13,10 +13,15 @@ public class Outtake {
     DcMotor motor_shooter_2;
     NormalizedColorSensor colorSensor1;
     NormalizedColorSensor colorSensor2;
-    Servo servo;
+    Servo jumper1;
+    Servo jumper2;
 
     float normRed_1, normGreen_1, normBlue_1, normPurple_1;
     float normRed_2, normGreen_2, normBlue_2, normPurple_2;
+
+    double jump;
+    //please baga valoare
+    //HAHAHAHA DOUBLE JUMP, GET IT?
 
     public enum DetectedColor {
         GREEN,
@@ -26,7 +31,8 @@ public class Outtake {
     public Outtake (HardwareMap hw){
         motor_shooter_1 = hw.dcMotor.get("MotorShooter_1");
         motor_shooter_2 = hw.dcMotor.get("MotorShooter_2");
-        servo = hw.servo.get("Servo_1");
+        jumper1 = hw.servo.get("Jumper_1");
+        jumper2 = hw.servo.get("Jumper_2");
 
         colorSensor1 = hw.get(NormalizedColorSensor.class,"SensorColor_1");
         colorSensor2 = hw.get(NormalizedColorSensor.class, "SensorColor_2");
@@ -90,8 +96,14 @@ public class Outtake {
         boolean isGreen = greenValue > redValue && greenValue > 0.4;
 
         if(isGreen){
-            if(sensorNumber == 1) {Shooter_ON_1();}
-            else {Shooter_ON_2();}
+            if(sensorNumber == 1) {
+                Shooter_ON_1();
+                Jump_1();
+            }
+            else {
+                Shooter_ON_2();
+                Jump_2();
+            }
         }
 
         return isGreen;
@@ -118,7 +130,7 @@ public class Outtake {
         motor_shooter_1.setPower(1);
     }
     void Shooter_ON_2() {
-        motor_shooter_2.setPower(1);
+       motor_shooter_2.setPower(1);
     }
     void Shooter_OFF_1() {
         motor_shooter_1.setPower(0);
@@ -126,16 +138,16 @@ public class Outtake {
     void Shooter_OFF_2() {
         motor_shooter_2.setPower(0);
     }
-    void Pos_1(){
-        servo.setPosition(0.6);
+    void Jump_1(){
+        jumper1.setPosition(jump);
     }
-
-    void Pos_2(){
-        servo.setPosition(0.5);
+    void Jump_2(){
+        jumper2.setPosition(jump);
     }
-
-    void Pos_3(){
-        servo.setPosition(0.75);
+    void Lower_1(){
+        jumper1.setPosition(0);
     }
-
+    void Lower_2(){
+        jumper2.setPosition(0);
+    }
 }

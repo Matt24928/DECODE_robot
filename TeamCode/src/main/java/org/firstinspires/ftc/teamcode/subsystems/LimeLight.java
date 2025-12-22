@@ -169,6 +169,7 @@ public class LimeLight extends SubsystemBase {
             if (result[i] < DistMin)
             {
                 ind = i;
+
             }
         }
         return (coord.get(ind));
@@ -220,13 +221,23 @@ public class LimeLight extends SubsystemBase {
 
     }
 
-    public List<String> collor() {
-
-
-
-
-
-
+    public int[] collor()
+    {
+        List<LLResultTypes.FiducialResult> ficu = getTags();
+        for(int i=0; i<ficu.size();i++)
+        {
+            int id = ficu.get(0).getFiducialId();
+            switch (id){
+                case 21:
+                    return new int[]{2, 1, 1};
+                case 22:
+                    return new int[]{1, 2, 1};
+                case 23:
+                    return new int[]{1, 1, 2};
+                default:
+                    return new int[3];
+            }
+        }
         return null;
-    }//returneaza culorile necesare
+    }//returneaza 0 pt bila verde si 1 pt bila mov
 }

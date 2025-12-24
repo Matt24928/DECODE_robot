@@ -72,7 +72,6 @@ public class LimeLight extends SubsystemBase {
 
         for (int i = 0; i < detections.size(); i++) {
             LLResultTypes.DetectorResult det = detections.get(i);
-
             double tx = det.getTargetXDegrees();
             double ty = det.getTargetYDegrees();
 
@@ -159,7 +158,7 @@ public class LimeLight extends SubsystemBase {
             double x = coord.get(i)[0];
             double y = coord.get(i)[1];
             double d=Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-            result[i]=d;
+             if(x>80) result[i]=d;
         }
         int i;
         double c=0,DistMin=1000000000;
@@ -223,21 +222,20 @@ public class LimeLight extends SubsystemBase {
 
     public int[] collor()
     {
+        List <int[]> culoare = new ArrayList<>();
         List<LLResultTypes.FiducialResult> ficu = getTags();
         for(int i=0; i<ficu.size();i++)
         {
             int id = ficu.get(0).getFiducialId();
             switch (id){
                 case 21:
-                    return new int[]{2, 1, 1};
+                    culoare.add(new int[]{2, 1, 1});
                 case 22:
-                    return new int[]{1, 2, 1};
+                    culoare.add(new int[]{1, 2, 1});
                 case 23:
-                    return new int[]{1, 1, 2};
-                default:
-                    return new int[3];
+                    culoare.add(new int[]{1, 1, 2});
             }
         }
-        return null;
-    }//returneaza 0 pt bila verde si 1 pt bila mov
+        return culoare.get(culoare.size()-1);
+    }//returneaza 0 pt bila verde si 1 pt bila mov, incepe cu ultimu tag()
 }

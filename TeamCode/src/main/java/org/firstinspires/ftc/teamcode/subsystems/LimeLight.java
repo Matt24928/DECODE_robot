@@ -7,18 +7,14 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
-@Autonomous
+
 public class LimeLight extends SubsystemBase {
     private Limelight3A limelight;
     LLResult result;
@@ -40,11 +36,6 @@ public class LimeLight extends SubsystemBase {
         result = getResult();
     }
 
-    //ty = llResult.getTy()     tx = llResult.getTx()
-    public double HeadingPerpend(double tx){
-        double theta = follower.getPose().getHeading();
-        return (theta+Math.toRadians(tx));
-    }
     public double[] coordonate(double tx, double ty) {
 
         double alpha= 30;//unghiu dintre camera si sol
@@ -60,14 +51,11 @@ public class LimeLight extends SubsystemBase {
     }
     public List<double[]> RelativeCoords() {
 
-        LLResult result = limelight.getLatestResult();
-
         if (result == null || !result.isValid()) {
             return new ArrayList<>();   // return empty list if no detections
         }
 
-        List<LLResultTypes.DetectorResult> detections = result.getDetectorResults();
-
+        List<LLResultTypes.DetectorResult> detections = this.result.getDetectorResults();
         List<double[]> points = new ArrayList<>();
 
         for (int i = 0; i < detections.size(); i++) {
@@ -78,21 +66,14 @@ public class LimeLight extends SubsystemBase {
             double[] xy = coordonate(tx, ty);
             points.add(xy);
         }
-
         return points;
     }//returneaza toate coordonatelede la obiecte
     public List<double[]> RelativeCoords2(int y) {
-
-        LLResult result = limelight.getLatestResult();
-
         if (result == null || !result.isValid()) {
             return new ArrayList<>();   // return empty list if no detections
         }
-
-        List<LLResultTypes.DetectorResult> detections = result.getDetectorResults();
-
+        List<LLResultTypes.DetectorResult> detections = this.result.getDetectorResults();
         List<double[]> points = new ArrayList<>();
-
         for (int i = 0; i < detections.size(); i++) {
             LLResultTypes.DetectorResult det = detections.get(i);
             double tx, ty;
@@ -105,7 +86,6 @@ public class LimeLight extends SubsystemBase {
                         xy = coordonate(tx, ty);
                         points.add(xy);}
                     break;
-
                 case 2:
                     if (Objects.equals(det.getClassName(), "purple")){
                         tx = det.getTargetXDegrees();
@@ -115,7 +95,6 @@ public class LimeLight extends SubsystemBase {
                     break;
             }
         }
-
         return points;
     }//returneaza coord obj cul. verd
     public void changepipeline(int i){
@@ -123,88 +102,48 @@ public class LimeLight extends SubsystemBase {
         pipeline=i;
         limelight.pipelineSwitch(i);
     }//schimba pipeline
-    public double[] distante (List <double[]>coord,Pose poz){
-        double cx=poz.getX();
-        double cy=poz.getY();
 
-        double[] result =new double[coord.size()];
-        int sz = coord.size();
-
-        for (int i=0;sz>i;i++) {
-            double x=coord.get(i)[0];
-            double y=coord.get(i)[1];
-            double d=Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-            result[i]=d;
-        }
-
-        return result;
-    }/*calculeaza distantele*/
     private List<Pose> CoordToPose(List<double[]>coord){
         List<Pose> coor = new ArrayList<>();
         for(int i=0;i<coord.size();i++)
         {
             double[] matematica = coord.get(i);
-            coor.add(new Pose(matematica[0],matematica[1],Math.toRadians(matematica[0])+follower.getHeading()));
+            coor.add(new Pose(matematica[0],matematica[1],matematica[2]));
         }
         return coor;
     }//transforma din lista de coord in lista de vectori de pozitie
     public double[] devmin(List<double[]> coord){
-        double[] result =new double[coord.size()];
-        double cx=23;
-        double cy=22;//set de coordonate punct de unde avem voie sa aruncam
-        int sz = coord.size();
+        if (coord == null || coord.isEmpty()) return null;
+        double[] dist = new double[coord.size()];
+        double cx = 23, cy = 22;
 
-        for (int i=0;sz>i;i++) {
+        for (int i = 0; i < coord.size(); i++) {
             double x = coord.get(i)[0];
             double y = coord.get(i)[1];
-            double d=Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-             if(x>80) result[i]=d;
-        }
-        int i;
-        double c=0,DistMin=1000000000;
-        int ind=0,count = result.length;
-        for (i = 0; i <count; i++)
-        {
-            if (result[i] < DistMin)
-            {
-                ind = i;
 
+            if (x > 80) dist[i] = Math.hypot(x - cx, y - cy);
+            else dist[i] = Double.POSITIVE_INFINITY; // tx gpt we love you
+        }
+
+        double val = Double.POSITIVE_INFINITY;
+        int cont = -1;
+
+        for (int i = 0; i < dist.length; i++) {
+            if (dist[i] < val) {
+                val = dist[i];
+                cont = i;
             }
         }
-        return (coord.get(ind));
-    }//calculeaza coord celui mai apropiat obj fata de un set de coord    A,si utilizeazo cand ma duc undeva si am nevoie de o anumita minge cu o anumita culoare(tre sa setez si pipelineindexu or smth)
-    /*metoda ajutatoare ca am nev*/        /*PROBLEMA*/
-    private int pozitie_la_minim(double[] numar){
-        OptionalDouble min = Arrays.stream(numar).min();
-        int c=0;
-        int[] u = new int[numar.length];
-        for (int i=0;i<numar.length;i++)
-        {
-            if (min.getAsDouble()==numar[i])
-            {
-                u[c]=i;
-                c++;
-            }
-        }
-        return u[0];
+        return (cont >= 0 && val != Double.POSITIVE_INFINITY) ? coord.get(cont) : null;
     }
-    public Pose coordClose(Pose pozitie){
-        List<double[]> coord = RelativeCoords();
-        List<Pose> cord = CoordToPose(coord);
-        double[] mort = new double[coord.size()];
-        for (int i=0;i<cord.size();i++)
-        {   Pose Poz = cord.get(i);
-            double d = Poz.distanceFrom(follower.getPose()) + Poz.distanceFrom(pozitie);
-            mort [i]=d;
-        }
-        return cord.get(pozitie_la_minim(mort));
-    } //da poze-ul la care tre sa se duca robotul in auto, daca nu conteaza culoarea
-    public Pose close_obj (int i) {
-        double[] NuMaiPoooooottt = new double[0];
-        if (i == 0)
+    //calculeaza coord celui mai apropiat obj fata de un set de coord    A,si utilizeazo cand ma duc undeva si am nevoie de o anumita minge cu o anumita culoare(tre sa setez si pipelineindexu or smth)
+    /*metoda ajutatoare ca am nev*/        /*PROBLEMA*/
+    public Pose close_obj (OptionalInt i) {
+        double[] NuMaiPoooooottt;
+        if (i.isEmpty())
             NuMaiPoooooottt = devmin(RelativeCoords());
         else
-            NuMaiPoooooottt = devmin(RelativeCoords2(i));
+            NuMaiPoooooottt = devmin(RelativeCoords2(i.getAsInt()));
         //pozitia celui mai apropiat dintre obiecte cu 0 avem toate obiectele cu 1 avem green si pe 2 avem purple
         return new Pose(NuMaiPoooooottt[0], NuMaiPoooooottt[1], NuMaiPoooooottt[2]);
     }
@@ -214,26 +153,28 @@ public class LimeLight extends SubsystemBase {
     // DACA SE CITESC APRIL TAGURI MULTIPLE DE CULORI, TREBUIE VERIFICAT!!!!!!!
     private List<LLResultTypes.FiducialResult> getTags() {
         changepipeline(3); //tre sa schimb ca nush pipelinu folosit
-        LLResult r = limelight.getLatestResult();
+        LLResult r = this.result;
         if (r == null || !r.isValid()) return new ArrayList<>();
         return r.getFiducialResults();
 
     }
-
     public int[] collor()
     {
         List <int[]> culoare = new ArrayList<>();
         List<LLResultTypes.FiducialResult> ficu = getTags();
         for(int i=0; i<ficu.size();i++)
         {
-            int id = ficu.get(0).getFiducialId();
+            int id = ficu.get(i).getFiducialId();
             switch (id){
                 case 21:
                     culoare.add(new int[]{2, 1, 1});
+                    break;
                 case 22:
                     culoare.add(new int[]{1, 2, 1});
+                    break;
                 case 23:
                     culoare.add(new int[]{1, 1, 2});
+                    break;
             }
         }
         return culoare.get(culoare.size()-1);

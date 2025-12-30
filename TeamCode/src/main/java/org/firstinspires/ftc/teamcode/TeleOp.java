@@ -21,7 +21,7 @@ public class TeleOp extends OpMode {
     private Supplier<PathChain> pathChain;
     public static Pose startingPose;
     private TelemetryManager telemetryM;
-AutoLimeLight Auto;
+
 
     @Override
     public void init() {

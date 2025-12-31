@@ -5,10 +5,13 @@ import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.Gamepad;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.Subsystems.Intake;
 import org.firstinspires.ftc.teamcode.Subsystems.Outtake;
 import org.firstinspires.ftc.teamcode.Subsystems.Sorter;
@@ -27,6 +30,12 @@ public class Teleop extends OpMode {
     // Slow mode (opțional)
     private boolean slowMode = false;
     private double slowModeMultiplier = 0.5;
+    private Gamepad currentGamepad1 = new Gamepad();
+    private Gamepad previousGamepad1 = new Gamepad();
+
+    private Gamepad currentGamepad2 = new Gamepad();
+    private Gamepad previousGamepad2 = new Gamepad();
+    boolean fastShooter = false;
     @Override
     public void start() {
         //The parameter controls whether the Follower should use break mode on the motors (using it is recommended).
@@ -46,6 +55,20 @@ public class Teleop extends OpMode {
 
     @Override
     public void loop() {
+
+        try {
+            // Copiază gamepadurile pentru comparație între frame-uri
+            previousGamepad1.copy(currentGamepad1);
+            currentGamepad1.copy(gamepad1);
+            previousGamepad2.copy(currentGamepad2);
+            currentGamepad2.copy(gamepad2);
+
+
+        } catch (Exception e) {
+            telemetry.addLine("Exception  Assigning Gamepads. " + e);
+        }
+
+        follower.update();
         if (!automatedDrive) {
             follower.setTeleOpDrive(
                     -gamepad1.left_stick_y,
@@ -54,40 +77,37 @@ public class Teleop extends OpMode {
                     true );}
 
 
+
+
         // Dpad Up - moveP
-        if (gamepad2.aWasPressed()) {
+        if (gamepad1.yWasPressed()) {
             intake.eat();
         }
-        if (gamepad2.xWasPressed()) {
+
+        if (gamepad1.bWasPressed()) {
             intake.intake.setPower(0);
         }
-        if (gamepad2.xWasPressed()) {
-            outtake.Jump_2();
+        if(currentGamepad1.dpad_left && !previousGamepad1.dpad_left){
+            outtake.Jump1();
         }
-        if (gamepad2.aWasPressed()) {
-            outtake.Lower_2();
+        if(currentGamepad1.dpad_right && !previousGamepad1.dpad_right){
+            outtake.Jump2();
         }
-        if(gamepad2.rightBumperWasPressed()){
-            outtake.motor_shooter_1.setPower(1);
+
+
+
+
+        if (gamepad1.right_bumper) {
+            outtake.motor_shooter_2.setPower(0);
         }
-        if(gamepad2.leftBumperWasPressed()){
+        if (gamepad1.right_trigger>0.3) {
+            outtake.motor_shooter_2.setPower(1);
+        }
+        if(gamepad1.left_bumper){
             outtake.motor_shooter_1.setPower(0);
         }
-
-
-        // Dpad Down - moveB
-        if (gamepad1.dpadDownWasPressed()) {
-            sorter.Middle();
-        }
-
-        // Dpad Left - SetS
-        if (gamepad1.dpadLeftWasPressed()) {
-            sorter.Left();
-        }
-
-        // Dpad Right - SetB
-        if (gamepad1.dpadRightWasPressed()) {
-            sorter.Right();
+        if(gamepad1.left_trigger>0.3){
+            outtake.motor_shooter_1.setPower(1);
         }
 
 

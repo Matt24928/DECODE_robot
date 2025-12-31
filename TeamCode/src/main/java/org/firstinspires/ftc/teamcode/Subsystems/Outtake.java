@@ -2,6 +2,10 @@ package org.firstinspires.ftc.teamcode.Subsystems;
 
 import android.graphics.Color;
 
+import com.arcrobotics.ftclib.command.InstantCommand;
+import com.arcrobotics.ftclib.command.SubsystemBase;
+import com.arcrobotics.ftclib.command.WaitCommand;
+import com.arcrobotics.ftclib.command.WaitUntilCommand;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -12,14 +16,19 @@ import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+import org.firstinspires.ftc.teamcode.Commands.Wait;
 
 import java.util.TreeMap;
 
 @Configurable
-public class Outtake {
+public class Outtake extends SubsystemBase {
+    ElapsedTime timer2 = new ElapsedTime();
+    ElapsedTime timer1 = new ElapsedTime();
     public DcMotorEx motor_shooter_1,motor_shooter_2;
     double k1=1.03,k2=1.03,r=0.048;
 
@@ -27,13 +36,13 @@ public class Outtake {
     NormalizedColorSensor colorSensor2;
     Servo jumper1,jumper2,angler;
     double P1 = 20,P2 = 20,F1=30,F2=30;
-    double LOW1 = 0.25,JUMP1 = 0.45;
+    double LOW1 = 0.55,JUMP1 = 0.37;
     double LOW2 = 0.25,JUMP2 = 0.45;
     //please baga valoare
     //HAHAHAHA DOUBLE JUMP, GET IT?
     public float hue1,hue2,sat1,sat2,val1,val2;
-    double current1,currentAlert1,Ticks1,RPM1,AngularSpeed1,LiniarSpeed1;
-    double current2,currentAlert2,Ticks2,RPM2,AngularSpeed2,LiniarSpeed2;
+    public double current1,currentAlert1,Ticks1,RPM1,AngularSpeed1,LiniarSpeed1;
+    public double current2,currentAlert2,Ticks2,RPM2,AngularSpeed2,LiniarSpeed2;
     double anglePoz;
     private TreeMap<Double, Double> AnglerPozToHoodAngle = new TreeMap<>();
     DetectedColor color1,color2;
@@ -53,7 +62,7 @@ public class Outtake {
 
         motor_shooter_2 = hw.get(DcMotorEx.class, "MotorShooter_2");
         motor_shooter_2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        motor_shooter_2.setDirection(DcMotorSimple.Direction.FORWARD);
+        motor_shooter_2.setDirection(DcMotorSimple.Direction.REVERSE);
         PIDFCoefficients pidfCoefficients2 = new PIDFCoefficients(P2,0,0,F2);
         motor_shooter_2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients2);
 
@@ -66,7 +75,12 @@ public class Outtake {
         colorSensor1.setGain(2f);
         colorSensor2.setGain(2f);
 
+        jumper1.setPosition(LOW1);
+        jumper2.setPosition(LOW2);
+
         AnglerPozToHoodAngle.put(0.1,30.0); //ohoho cat avem de scris aici(dependenta intre unghiul hoodului si pozitia servoului)
+
+
     }
 
     private DetectedColor detectColor(
@@ -87,7 +101,7 @@ public class Outtake {
             telemetry.addData("Sat_", sat);
             telemetry.addData("Val_", val);
 
-            if (hue > 95 && hue < 180)
+            if (hue > 90 && hue < 180)
                 return DetectedColor.GREEN;
             else if (hue > 220 && hue < 295)
                 return DetectedColor.PURPLE;
@@ -139,7 +153,7 @@ public class Outtake {
 
         anglePoz = AnglePoz();
         t.addData("Shooter Poz","%f",anglePoz);
-        t.addData("Jumper2","%f",jumper2.getPosition());
+        t.addData("Jumper1","%f",jumper1.getPosition());
 
     }
 
@@ -165,39 +179,31 @@ public class Outtake {
     }*/ //nu folosim cred
 
 
+    boolean jumpRunning = false;
+
+
+    boolean waiting = false;
+
+    public void Jump2() {
+       jumper2.setPosition(LOW2+JUMP2-jumper2.getPosition());
+    }
+
+    public void Jump1() {
+        jumper1.setPosition(LOW1+JUMP1-jumper1.getPosition());
+    }
+
+
+
 
     public double AnglePoz(){
         return angler.getPosition();
     }
-    public void Shooter_ON_1() {
-        motor_shooter_1.setPower(0.7);
+
+    public void moveF1(){
+        jumper1.setPosition(jumper1.getPosition()+0.05);
     }
-    public void Shooter_ON_2() {
-        motor_shooter_2.setPower(1);
-    }
-    public void Shooter_OFF_1() {
-        motor_shooter_1.setPower(0);
-    }
-    public void Shooter_OFF_2() {
-        motor_shooter_2.setPower(0);
-    }
-    public void Jump_1(){
-        jumper1.setPosition(JUMP1);
-    }
-    public void Jump_2(){
-        jumper2.setPosition(JUMP2);
-    }
-    public void Lower_1(){
-        jumper1.setPosition(LOW1);
-    }
-    public void Lower_2(){
-        jumper2.setPosition(LOW2);
-    }
-    public void moveF2(){
-        jumper2.setPosition(jumper2.getPosition()+0.05);
-    }
-    public void moveB2(){
-        jumper2.setPosition(jumper2.getPosition()-0.05);
+    public void moveB1(){
+        jumper1.setPosition(jumper1.getPosition()-0.05);
     }
 
 }

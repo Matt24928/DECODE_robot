@@ -18,6 +18,19 @@ public class Intake extends SubsystemBase {
      public void spit(){
         intake.setPower(spit);
      }
+     public void powAlittle(){
+        intake.setPower(intake.getPower()+0.1);
+     }
+    public void depowAlittle(){
+        intake.setPower(intake.getPower()-0.1);
+    }
+    public void setSpit(){
+        spit = intake.getPower();
+    }
+    public void setEat(){
+        eat = intake.getPower();
+    }
+
      public void zero(){
         intake.setPower(0);
         intake.getZeroPowerBehavior();

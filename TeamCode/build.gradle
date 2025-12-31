@@ -25,5 +25,4 @@ android {
 
 dependencies {
     implementation project(':FtcRobotController')
-    implementation 'com.arcrobotics.ftclib:FTCLib:2.1.1'
 }

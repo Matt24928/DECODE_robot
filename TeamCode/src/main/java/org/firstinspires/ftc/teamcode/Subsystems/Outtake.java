@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.Subsystems;
 
 import android.graphics.Color;
 
+import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -14,21 +16,26 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
+import java.util.TreeMap;
+
+@Configurable
 public class Outtake {
     public DcMotorEx motor_shooter_1,motor_shooter_2;
     double k1=1.03,k2=1.03,r=0.048;
 
     NormalizedColorSensor colorSensor1;
     NormalizedColorSensor colorSensor2;
-    Servo jumper1;
-    Servo jumper2;
-    double P1 = 0,P2 = 0,F1=0,F2=0;
-    double jump,low;
+    Servo jumper1,jumper2,angler;
+    double P1 = 20,P2 = 20,F1=30,F2=30;
+    double LOW1 = 0.25,JUMP1 = 0.45;
+    double LOW2 = 0.25,JUMP2 = 0.45;
     //please baga valoare
     //HAHAHAHA DOUBLE JUMP, GET IT?
     public float hue1,hue2,sat1,sat2,val1,val2;
-    double current1,currentAlert1,Ticks1,RPM1,AngleSpeed1,LiniarSpeed1;
-    double current2,currentAlert2,Ticks2,RPM2,AngleSpeed2,LiniarSpeed2;
+    double current1,currentAlert1,Ticks1,RPM1,AngularSpeed1,LiniarSpeed1;
+    double current2,currentAlert2,Ticks2,RPM2,AngularSpeed2,LiniarSpeed2;
+    double anglePoz;
+    private TreeMap<Double, Double> AnglerPozToHoodAngle = new TreeMap<>();
     DetectedColor color1,color2;
     public enum DetectedColor {
         GREEN,
@@ -52,20 +59,21 @@ public class Outtake {
 
         jumper1 = hw.servo.get("Jumper_1");
         jumper2 = hw.servo.get("Jumper_2");
+        angler = hw.servo.get("Angler");
 
         colorSensor1 = hw.get(NormalizedColorSensor.class,"SensorColor_1");
         colorSensor2 = hw.get(NormalizedColorSensor.class, "SensorColor_2");
         colorSensor1.setGain(2f);
         colorSensor2.setGain(2f);
+
+        AnglerPozToHoodAngle.put(0.1,30.0); //ohoho cat avem de scris aici(dependenta intre unghiul hoodului si pozitia servoului)
     }
+
     private DetectedColor detectColor(
             NormalizedColorSensor sensor,
             Telemetry telemetry,
             String name
     ) {
-        char[] c = new char[3];
-
-        for(int i = 0; i < 3; i++) {
             NormalizedRGBA colors = sensor.getNormalizedColors();
             float[] hsv = new float[3];
             Color.colorToHSV(colors.toColor(), hsv);
@@ -74,29 +82,17 @@ public class Outtake {
             float sat = hsv[1];
             float val = hsv[2];
 
-            /*telemetry.addLine("--" + name + "--");
-            telemetry.addData("Hue_" + i, hue);
-            telemetry.addData("Sat_" + i, sat);
-            telemetry.addData("Val_" + i, val);*/
+            telemetry.addLine("--" + name + "--");
+            telemetry.addData("Hue_", hue);
+            telemetry.addData("Sat_", sat);
+            telemetry.addData("Val_", val);
 
-            if (val < 0.20 || sat < 0.25)
-                c[i] = 'z';
-            else if (hue > 95 && hue < 145)
-                c[i] = 'G';
-            else if (hue > 265 && hue < 295)
-                c[i] = 'P';
-            else
-                c[i] = 'z';
-        }
-
-        if(c[0]=='G' && c[1]=='G' && c[2]=='G')
-            return DetectedColor.GREEN;
-        if(c[0]=='P' && c[1]=='P' && c[2]=='P')
-            return DetectedColor.PURPLE;
-
-        return DetectedColor.UNKNOWN;
+            if (hue > 95 && hue < 180)
+                return DetectedColor.GREEN;
+            else if (hue > 220 && hue < 295)
+                return DetectedColor.PURPLE;
+            else return DetectedColor.UNKNOWN;
     }
-
     public DetectedColor getDetectedColor1(Telemetry t){
         return detectColor(colorSensor1, t, "Sensor 1");
     }
@@ -108,15 +104,15 @@ public class Outtake {
          currentAlert1 = motor_shooter_1.getCurrentAlert(CurrentUnit.MILLIAMPS);
          Ticks1 = motor_shooter_1.getVelocity();
          RPM1 = (Ticks1/28)*60;
-         AngleSpeed1 = motor_shooter_1.getVelocity(AngleUnit.RADIANS);
-         LiniarSpeed1 = k1*AngleSpeed1*r;
+         AngularSpeed1 = motor_shooter_1.getVelocity(AngleUnit.RADIANS);
+         LiniarSpeed1 = k1*AngularSpeed1*r;
 
         t.addLine("--Motor 1--");
         t.addData("Current (mA)", "%.1f", current1);
         t.addData("Alert Current (mA)", "%.1f", currentAlert1);
         t.addData("Ticks/sec", "%.1f", Ticks1);
         t.addData("RPM", "%.1f", RPM1);
-        t.addData("Angular Speed (rad/s)", "%.2f", AngleSpeed1);
+        t.addData("Angular Speed (rad/s)", "%.2f", AngularSpeed1);
         t.addData("Linear Speed (m/s)", "%.2f", LiniarSpeed1);
 
 
@@ -124,15 +120,15 @@ public class Outtake {
          currentAlert2 = motor_shooter_2.getCurrentAlert(CurrentUnit.MILLIAMPS);
          Ticks2 = motor_shooter_2.getVelocity();
          RPM2 = (Ticks2/28)*60;
-         AngleSpeed2 = motor_shooter_2.getVelocity(AngleUnit.RADIANS);
-         LiniarSpeed2 = k2*AngleSpeed2*r;
+         AngularSpeed2 = motor_shooter_2.getVelocity(AngleUnit.RADIANS);
+         LiniarSpeed2 = k2*AngularSpeed2*r;
 
         t.addLine("--Motor 2--");
         t.addData("Current (mA)", "%.1f", current2);
         t.addData("Alert Current (mA)", "%.1f", currentAlert2);
         t.addData("Ticks/sec", "%.1f", Ticks2);
         t.addData("RPM", "%.1f", RPM2);
-        t.addData("Angular Speed (rad/s)", "%.2f", AngleSpeed2);
+        t.addData("Angular Speed (rad/s)", "%.2f", AngularSpeed2);
         t.addData("Linear Speed (m/s)", "%.2f", LiniarSpeed1);
 
          color1 = getDetectedColor1(t);
@@ -140,6 +136,38 @@ public class Outtake {
 
         t.addData("Sensor 1", "%s", color1);
         t.addData("Sensor 2", "%s", color2);
+
+        anglePoz = AnglePoz();
+        t.addData("Shooter Poz","%f",anglePoz);
+        t.addData("Jumper2","%f",jumper2.getPosition());
+
+    }
+
+    /*public double getHoodAngle(double anglePoz){
+        if (AnglerPozToHoodAngle.isEmpty()) {
+            // map-ul e gol → returnezi un default
+            return 0.0;
+        }
+
+        Double floorKey = AnglerPozToHoodAngle.floorKey(anglePoz);
+        Double ceilKey = AnglerPozToHoodAngle.ceilingKey(anglePoz);
+
+        // daca una e null, folosim cealalta
+        if (floorKey == null) return AnglerPozToHoodAngle.get(ceilKey);
+        if (ceilKey == null) return AnglerPozToHoodAngle.get(floorKey);
+
+        // alegem cea mai apropiata
+        if (anglePoz - floorKey < ceilKey - anglePoz) {
+            return AnglerPozToHoodAngle.get(floorKey);
+        } else {
+            return AnglerPozToHoodAngle.get(ceilKey);
+        }
+    }*/ //nu folosim cred
+
+
+
+    public double AnglePoz(){
+        return angler.getPosition();
     }
     public void Shooter_ON_1() {
         motor_shooter_1.setPower(0.7);
@@ -154,16 +182,16 @@ public class Outtake {
         motor_shooter_2.setPower(0);
     }
     public void Jump_1(){
-        jumper1.setPosition(jump);
+        jumper1.setPosition(JUMP1);
     }
     public void Jump_2(){
-        jumper2.setPosition(jump);
+        jumper2.setPosition(JUMP2);
     }
     public void Lower_1(){
-        jumper1.setPosition(low);
+        jumper1.setPosition(LOW1);
     }
     public void Lower_2(){
-        jumper2.setPosition(low);
+        jumper2.setPosition(LOW2);
     }
     public void moveF2(){
         jumper2.setPosition(jumper2.getPosition()+0.05);
@@ -171,10 +199,5 @@ public class Outtake {
     public void moveB2(){
         jumper2.setPosition(jumper2.getPosition()-0.05);
     }
-    public void SetJ(){
-        jump = jumper2.getPosition();
-    }
-    public void SetL(){
-        low = jumper2.getPosition();
-    }
+
 }

@@ -74,12 +74,6 @@ public class OuttakeTest extends OpMode {
         if (gamepad2.dpadDownWasPressed()) {
             outtake.moveB2();
         }
-        if (gamepad2.dpadLeftWasPressed()) {
-            outtake.SetJ();
-        }
-        if (gamepad2.dpadRightWasPressed()) {
-            outtake.SetL();
-        }
         if (gamepad2.xWasPressed()) {
             outtake.Jump_2();
         }

@@ -10,8 +10,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 import org.firstinspires.ftc.teamcode.Subsystems.Outtake;
 
-@TeleOp
-@Disabled
+@TeleOp(name = "Outtake Test", group = "Configs")
 public class OuttakeTest extends OpMode {
 
     public DcMotorEx shooter;
@@ -70,12 +69,7 @@ public class OuttakeTest extends OpMode {
         if(gamepad1.dpadDownWasPressed()) {
             P -= stepSizes[stepIndex];
         }
-        if (gamepad2.dpadUpWasPressed()) {
-            outtake.moveF1();
-        }
-        if (gamepad2.dpadDownWasPressed()) {
-            outtake.moveB1();
-        }
+
         if (gamepad2.xWasPressed()) {
             outtake.Jump2();
         }

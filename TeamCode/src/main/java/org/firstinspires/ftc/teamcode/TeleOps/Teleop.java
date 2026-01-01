@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.TeleOps;
 
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 
+import android.text.BoringLayout;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.geometry.Pose;
@@ -9,6 +11,7 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -35,7 +38,10 @@ public class Teleop extends OpMode {
 
     private Gamepad currentGamepad2 = new Gamepad();
     private Gamepad previousGamepad2 = new Gamepad();
-    boolean fastShooter = false;
+    public ElapsedTime Timer1,Timer2,GetToSpeedTimer;
+    boolean jumped1 = false, jumped2 = false;
+
+
     @Override
     public void start() {
         //The parameter controls whether the Follower should use break mode on the motors (using it is recommended).
@@ -51,6 +57,9 @@ public class Teleop extends OpMode {
         sorter = new Sorter(hardwareMap);
         intake = new Intake(hardwareMap);
         outtake = new Outtake(hardwareMap);
+        Timer1 = new ElapsedTime();
+        Timer2 = new ElapsedTime();
+        GetToSpeedTimer = new ElapsedTime();
     }
 
     @Override
@@ -88,10 +97,23 @@ public class Teleop extends OpMode {
             intake.intake.setPower(0);
         }
         if(currentGamepad1.dpad_left && !previousGamepad1.dpad_left){
+            Timer1.reset();
             outtake.Jump1();
+            jumped1 = true;
+
+        }
+        if(jumped1 && Timer1.time()>=1){
+            outtake.Low1();
+            jumped1 = false;
         }
         if(currentGamepad1.dpad_right && !previousGamepad1.dpad_right){
+            Timer2.reset();
             outtake.Jump2();
+            jumped2 = true;
+        }
+        if(jumped2 && Timer2.time()>1){
+            outtake.Low2();
+            jumped2 = false;
         }
 
 
@@ -112,16 +134,12 @@ public class Teleop extends OpMode {
 
 
         outtake.OuttakeData(telemetry);
-        //double pos = outtake.jumper1.getPosition();
+
         double pos2 = sorter.getPos();
         double putere = intake.intake.getPower();
-        //telemetry.addData("poz: ",pos);
         telemetry.addData("poz2: ", pos2);
         telemetry.addData("putere: ", putere);
-       // telemetry.addData("caprita: ",outtake.jumper2.getPosition());
-        // Slow mode toggle (opțional)
         telemetry.update();
-        // Exemplu de utilizare slow mode la comenzi servo-uri (dacă vrei)
-        // bounce.moveP(slowMode ? 0.5 : 1.0); // dacă ai overloading
+
     }
 }

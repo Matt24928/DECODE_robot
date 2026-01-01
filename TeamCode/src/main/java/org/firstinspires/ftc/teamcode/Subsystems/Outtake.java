@@ -2,12 +2,8 @@ package org.firstinspires.ftc.teamcode.Subsystems;
 
 import android.graphics.Color;
 
-import com.arcrobotics.ftclib.command.InstantCommand;
 import com.arcrobotics.ftclib.command.SubsystemBase;
-import com.arcrobotics.ftclib.command.WaitCommand;
-import com.arcrobotics.ftclib.command.WaitUntilCommand;
 import com.bylazar.configurables.annotations.Configurable;
-import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -21,14 +17,11 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
-import org.firstinspires.ftc.teamcode.Commands.Wait;
 
 import java.util.TreeMap;
 
 @Configurable
 public class Outtake extends SubsystemBase {
-    ElapsedTime timer2 = new ElapsedTime();
-    ElapsedTime timer1 = new ElapsedTime();
     public DcMotorEx motor_shooter_1,motor_shooter_2;
     double k1=1.03,k2=1.03,r=0.048;
 
@@ -51,14 +44,22 @@ public class Outtake extends SubsystemBase {
         PURPLE,
         UNKNOWN
     }
-
+    public enum JumpState{
+        IDLE,
+        JUMPING
+    }
+    public JumpState Jump1State = JumpState.IDLE;
+    public JumpState Jump2State = JumpState.IDLE;
+    private ElapsedTime Jump1Timer,Jump2Timer;
     public Outtake (HardwareMap hw){
+        Jump1Timer = new ElapsedTime();
+        Jump2Timer = new ElapsedTime();
+
         motor_shooter_1 = hw.get(DcMotorEx.class, "MotorShooter_1");
         motor_shooter_1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         motor_shooter_1.setDirection(DcMotorSimple.Direction.FORWARD);
         PIDFCoefficients pidfCoefficients1 = new PIDFCoefficients(P1,0,0,F1);
         motor_shooter_1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients1);
-
 
         motor_shooter_2 = hw.get(DcMotorEx.class, "MotorShooter_2");
         motor_shooter_2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -82,7 +83,6 @@ public class Outtake extends SubsystemBase {
 
 
     }
-
     private DetectedColor detectColor(
             NormalizedColorSensor sensor,
             Telemetry telemetry,
@@ -156,7 +156,6 @@ public class Outtake extends SubsystemBase {
         t.addData("Jumper1","%f",jumper1.getPosition());
 
     }
-
     /*public double getHoodAngle(double anglePoz){
         if (AnglerPozToHoodAngle.isEmpty()) {
             // map-ul e gol → returnezi un default
@@ -178,32 +177,81 @@ public class Outtake extends SubsystemBase {
         }
     }*/ //nu folosim cred
 
-
-    boolean jumpRunning = false;
-
-
-    boolean waiting = false;
-
+    public void Update(){
+        if(Jump1State == JumpState.JUMPING && Jump1Timer.seconds()>1.0){
+            Low1();
+            Jump1State = JumpState.IDLE;
+        }
+        if(Jump1State == JumpState.JUMPING && Jump2Timer.seconds()>1.0){
+            Low2();
+            Jump2State = JumpState.IDLE;
+        }
+    }
+    public void Low2(){
+        jumper2.setPosition(LOW2);
+    }
     public void Jump2() {
-       jumper2.setPosition(LOW2+JUMP2-jumper2.getPosition());
+       //jumper2.setPosition(LOW2+JUMP2-jumper2.getPosition());
+        jumper2.setPosition(JUMP2);
     }
-
+    public void Low1(){
+        jumper1.setPosition(LOW1);
+    }
     public void Jump1() {
-        jumper1.setPosition(LOW1+JUMP1-jumper1.getPosition());
+        //jumper1.setPosition(LOW1+JUMP1-jumper1.getPosition());
+        jumper1.setPosition(JUMP1);
     }
 
-
+    public void StartJump1(){
+        if (Jump1State != JumpState.IDLE) return;
+        Jump1();
+        Jump1Timer.reset();
+        Jump1State = JumpState.JUMPING;
+    }
+    public void StartJump2(){
+        if (Jump2State != JumpState.IDLE) return;
+        Jump2();
+        Jump2Timer.reset();
+        Jump2State = JumpState.JUMPING;
+    }
 
 
     public double AnglePoz(){
         return angler.getPosition();
     }
 
-    public void moveF1(){
-        jumper1.setPosition(jumper1.getPosition()+0.05);
+    public void Shoot1(){
+        motor_shooter_1.setPower(1);
     }
-    public void moveB1(){
-        jumper1.setPosition(jumper1.getPosition()-0.05);
+    public void Shoot2(){
+        motor_shooter_2.setPower(1);
+    }
+    public void Stop1(){
+        motor_shooter_1.setPower(0);
+    }
+    public void Stop2(){
+        motor_shooter_2.setPower(0);
     }
 
+
+    public boolean OneCanShootGreen(){
+        if (color1 == DetectedColor.GREEN){
+            return true;
+        }else return false;
+    }
+    public boolean OneCanShootPurple(){
+        if(color1 == DetectedColor.GREEN){
+            return true;
+        }else return false;
+    }
+    public boolean TwoCanShootGreen(){
+        if(color2 == DetectedColor.GREEN){
+            return true;
+        }else return false;
+    }
+    public boolean TwoCanShootPurple(){
+        if(color2 == DetectedColor.PURPLE){
+            return true;
+        }else return false;
+    }
 }

@@ -120,16 +120,16 @@ public class Teleop extends OpMode {
 
 
         if (gamepad1.right_bumper) {
-            outtake.motor_shooter_2.setPower(0);
+            outtake.Stop2();
         }
         if (gamepad1.right_trigger>0.3) {
-            outtake.motor_shooter_2.setPower(1);
+            outtake.Shoot2();
         }
         if(gamepad1.left_bumper){
-            outtake.motor_shooter_1.setPower(0);
+            outtake.Stop1();
         }
         if(gamepad1.left_trigger>0.3){
-            outtake.motor_shooter_1.setPower(1);
+            outtake.Shoot1();
         }
 
 
@@ -140,6 +140,7 @@ public class Teleop extends OpMode {
         telemetry.addData("poz2: ", pos2);
         telemetry.addData("putere: ", putere);
         telemetry.update();
+        outtake.Update();
 
     }
 }

@@ -48,12 +48,34 @@ public class Outtake extends SubsystemBase {
         IDLE,
         JUMPING
     }
+    public enum MotorState{
+        OFF,
+        STANDBY,
+        READY
+
+    }
+    public enum ShootState{
+        SHOOTED_GREEN,
+        SHOOTED_PURPLE,
+        UNAVAILABLE,
+        WAIT
+
+    }
+    public ShootState Shoot1State,Shoot2State;
+    public MotorState Motor1State = MotorState.OFF;
+    public MotorState Motor2State = MotorState.OFF;
+    private ElapsedTime Motor1Timer, Motor2Timer;
     public JumpState Jump1State = JumpState.IDLE;
     public JumpState Jump2State = JumpState.IDLE;
     private ElapsedTime Jump1Timer,Jump2Timer;
+    private ElapsedTime Shoot1Timer,Shoot2Timer;
     public Outtake (HardwareMap hw){
         Jump1Timer = new ElapsedTime();
         Jump2Timer = new ElapsedTime();
+        Motor1Timer = new ElapsedTime();
+        Motor2Timer = new ElapsedTime();
+        Shoot1Timer = new ElapsedTime();
+        Shoot2Timer = new ElapsedTime();
 
         motor_shooter_1 = hw.get(DcMotorEx.class, "MotorShooter_1");
         motor_shooter_1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -177,7 +199,7 @@ public class Outtake extends SubsystemBase {
         }
     }*/ //nu folosim cred
 
-    public void Update(){
+    public void Update(){ //valorile cu secundele trebuie reglate
         if(Jump1State == JumpState.JUMPING && Jump1Timer.seconds()>1.0){
             Low1();
             Jump1State = JumpState.IDLE;
@@ -186,21 +208,68 @@ public class Outtake extends SubsystemBase {
             Low2();
             Jump2State = JumpState.IDLE;
         }
+        if(Motor1State == MotorState.READY && Motor1Timer.seconds()>5.0){
+            Stop1();
+            Motor1State = MotorState.OFF;
+        }
+        if(Motor2State == MotorState.READY && Motor2Timer.seconds()>5.0){ //cat timp sta motorul pornit
+            Stop2();
+            Motor2State = MotorState.OFF;
+        }
+        if(OneCanShootGreen() && Shoot1State == ShootState.WAIT && Shoot1Timer.seconds()>2.0){ // cat asteapta ca motorul sa ajung la viteza necesara, o sa verificam si strict
+            StartJump1();
+            Shoot1State = ShootState.SHOOTED_GREEN;
+        }
+        if(TwoCanShootGreen() && Shoot2State == ShootState.WAIT && Shoot2Timer.seconds()>2.0){
+            StartJump2();
+            Shoot2State = ShootState.SHOOTED_GREEN;
+        }
+        if(OneCanShootPurple() && Shoot1State == ShootState.WAIT && Shoot1Timer.seconds()>2.0){
+            StartJump1();
+            Shoot1State = ShootState.SHOOTED_PURPLE;
+        }
+        if(TwoCanShootPurple() && Shoot2State == ShootState.WAIT && Shoot2Timer.seconds()>2.0){
+            StartJump2();
+            Shoot2State = ShootState.SHOOTED_PURPLE;
+        }
     }
-    public void Low2(){
-        jumper2.setPosition(LOW2);
+
+    public void ShootGreen(){
+        if(OneCanShootGreen()){
+            Shoot1Timer.reset();
+            AutoShoot1();
+            Shoot1State = ShootState.WAIT;
+        }else if(TwoCanShootGreen()){
+            Shoot2Timer.reset();
+            AutoShoot2();
+            Shoot2State = ShootState.WAIT;
+        }
     }
-    public void Jump2() {
-       //jumper2.setPosition(LOW2+JUMP2-jumper2.getPosition());
-        jumper2.setPosition(JUMP2);
+    public void ShootPurple(){
+        if(OneCanShootPurple()){
+            Shoot1Timer.reset();
+            AutoShoot1();
+            Shoot1State = ShootState.WAIT;
+        }else if(TwoCanShootPurple()){
+            Shoot2Timer.reset();
+            AutoShoot2();
+            Shoot2State = ShootState.WAIT;
+        }
     }
-    public void Low1(){
-        jumper1.setPosition(LOW1);
+
+    public void AutoShoot1(){
+        if(Motor1State == MotorState.READY) return;
+        Shoot1();
+        Motor1Timer.reset();
+        Motor1State = MotorState.READY;
     }
-    public void Jump1() {
-        //jumper1.setPosition(LOW1+JUMP1-jumper1.getPosition());
-        jumper1.setPosition(JUMP1);
+    public void AutoShoot2(){
+        if(Motor2State == MotorState.READY) return;
+        Shoot2();
+        Motor2Timer.reset();
+        Motor2State = MotorState.READY;
     }
+
 
     public void StartJump1(){
         if (Jump1State != JumpState.IDLE) return;
@@ -214,6 +283,7 @@ public class Outtake extends SubsystemBase {
         Jump2Timer.reset();
         Jump2State = JumpState.JUMPING;
     }
+
 
 
     public double AnglePoz(){
@@ -231,6 +301,20 @@ public class Outtake extends SubsystemBase {
     }
     public void Stop2(){
         motor_shooter_2.setPower(0);
+    }
+    public void Low2(){
+        jumper2.setPosition(LOW2);
+    }
+    public void Jump2() {
+        //jumper2.setPosition(LOW2+JUMP2-jumper2.getPosition());
+        jumper2.setPosition(JUMP2);
+    }
+    public void Low1(){
+        jumper1.setPosition(LOW1);
+    }
+    public void Jump1() {
+        //jumper1.setPosition(LOW1+JUMP1-jumper1.getPosition());
+        jumper1.setPosition(JUMP1);
     }
 
 

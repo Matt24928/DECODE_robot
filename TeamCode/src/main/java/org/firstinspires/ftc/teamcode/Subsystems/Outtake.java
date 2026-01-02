@@ -29,7 +29,7 @@ public class Outtake extends SubsystemBase {
     NormalizedColorSensor colorSensor2;
     Servo jumper1,jumper2,angler;
     double P1 = 20,P2 = 20,F1=30,F2=30;
-    double LOW1 = 0.55,JUMP1 = 0.37;
+    double LOW1 = 0.59,JUMP1 = 0.34;
     double LOW2 = 0.25,JUMP2 = 0.45;
     //please baga valoare
     //HAHAHAHA DOUBLE JUMP, GET IT?
@@ -64,7 +64,7 @@ public class Outtake extends SubsystemBase {
     public ShootState Shoot1State,Shoot2State;
     public MotorState Motor1State = MotorState.OFF;
     public MotorState Motor2State = MotorState.OFF;
-    private ElapsedTime Motor1Timer, Motor2Timer;
+    public ElapsedTime Motor1Timer, Motor2Timer;
     public JumpState Jump1State = JumpState.IDLE;
     public JumpState Jump2State = JumpState.IDLE;
     private ElapsedTime Jump1Timer,Jump2Timer;
@@ -77,15 +77,15 @@ public class Outtake extends SubsystemBase {
         Shoot1Timer = new ElapsedTime();
         Shoot2Timer = new ElapsedTime();
 
-        motor_shooter_1 = hw.get(DcMotorEx.class, "MotorShooter_1");
+        motor_shooter_1 = hw.get(DcMotorEx.class, "MotorShooter_2");
         motor_shooter_1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        motor_shooter_1.setDirection(DcMotorSimple.Direction.FORWARD);
+        motor_shooter_1.setDirection(DcMotorSimple.Direction.REVERSE);
         PIDFCoefficients pidfCoefficients1 = new PIDFCoefficients(P1,0,0,F1);
         motor_shooter_1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients1);
 
-        motor_shooter_2 = hw.get(DcMotorEx.class, "MotorShooter_2");
+        motor_shooter_2 = hw.get(DcMotorEx.class, "MotorShooter_1");
         motor_shooter_2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        motor_shooter_2.setDirection(DcMotorSimple.Direction.REVERSE);
+        motor_shooter_2.setDirection(DcMotorSimple.Direction.FORWARD);
         PIDFCoefficients pidfCoefficients2 = new PIDFCoefficients(P2,0,0,F2);
         motor_shooter_2.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, pidfCoefficients2);
 
@@ -200,35 +200,35 @@ public class Outtake extends SubsystemBase {
     }*/ //nu folosim cred
 
     public void Update(){ //valorile cu secundele trebuie reglate
-        if(Jump1State == JumpState.JUMPING && Jump1Timer.seconds()>1.0){
+        if(Jump1State == JumpState.JUMPING && Jump1Timer.seconds()>0.5){
             Low1();
             Jump1State = JumpState.IDLE;
         }
-        if(Jump2State == JumpState.JUMPING && Jump2Timer.seconds()>1.0){
+        if(Jump2State == JumpState.JUMPING && Jump2Timer.seconds()>0.5){
             Low2();
             Jump2State = JumpState.IDLE;
         }
-        if(Motor1State == MotorState.READY && Motor1Timer.seconds()>5.0){
+        if(Motor1State == MotorState.READY && Motor1Timer.seconds()>10.0){
             Stop1();
             Motor1State = MotorState.OFF;
         }
-        if(Motor2State == MotorState.READY && Motor2Timer.seconds()>5.0){ //cat timp sta motorul pornit
+        if(Motor2State == MotorState.READY && Motor2Timer.seconds()>10.0){ //cat timp sta motorul pornit
             Stop2();
             Motor2State = MotorState.OFF;
         }
-        if(OneCanShootGreen() && Shoot1State == ShootState.WAIT && Shoot1Timer.seconds()>2.0){ // cat asteapta ca motorul sa ajung la viteza necesara, o sa verificam si strict
+        if(OneCanShootGreen() && Shoot1State == ShootState.WAIT && RPM1>2200){ // cat asteapta ca motorul sa ajung la viteza necesara, o sa verificam si strict
             StartJump1();
             Shoot1State = ShootState.SHOOTED_GREEN;
         }
-        if(TwoCanShootGreen() && Shoot2State == ShootState.WAIT && Shoot2Timer.seconds()>2.0){
+        if(TwoCanShootGreen() && Shoot2State == ShootState.WAIT && RPM2>2200){
             StartJump2();
             Shoot2State = ShootState.SHOOTED_GREEN;
         }
-        if(OneCanShootPurple() && Shoot1State == ShootState.WAIT && Shoot1Timer.seconds()>2.0){
+        if(OneCanShootPurple() && Shoot1State == ShootState.WAIT && RPM1>2200){
             StartJump1();
             Shoot1State = ShootState.SHOOTED_PURPLE;
         }
-        if(TwoCanShootPurple() && Shoot2State == ShootState.WAIT && Shoot2Timer.seconds()>2.0){
+        if(TwoCanShootPurple() && Shoot2State == ShootState.WAIT && RPM2>2200){
             StartJump2();
             Shoot2State = ShootState.SHOOTED_PURPLE;
         }
@@ -315,6 +315,30 @@ public class Outtake extends SubsystemBase {
         jumper1.setPosition(JUMP1);
     }
 
+    public void moveFJ1() {
+        jumper1.setPosition(jumper1.getPosition()+ 0.01);
+    }
+
+    public void moveBJ1() {
+        jumper1.setPosition(jumper1.getPosition()- 0.01);
+    }
+
+    public void moveFJ2() {
+        jumper2.setPosition(jumper2.getPosition()+ 0.01);
+    }
+
+    public void moveBJ2() {
+        jumper2.setPosition(jumper2.getPosition()- 0.01);
+    }
+
+    public double getJ1() {
+        return jumper1.getPosition();
+    }
+
+    public double getJ2() {
+        return jumper2.getPosition();
+    }
+
 
     public boolean OneCanShootGreen(){
         if (color1 == DetectedColor.GREEN){
@@ -322,7 +346,7 @@ public class Outtake extends SubsystemBase {
         }else return false;
     }
     public boolean OneCanShootPurple(){
-        if(color1 == DetectedColor.GREEN){
+        if(color1 == DetectedColor.PURPLE){
             return true;
         }else return false;
     }

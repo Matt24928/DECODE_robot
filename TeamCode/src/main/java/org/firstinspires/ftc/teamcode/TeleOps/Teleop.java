@@ -64,6 +64,7 @@ public class Teleop extends OpMode {
 
     @Override
     public void loop() {
+        outtake.Update();
 
         try {
             // Copiază gamepadurile pentru comparație între frame-uri
@@ -96,40 +97,29 @@ public class Teleop extends OpMode {
         if (gamepad1.bWasPressed()) {
             intake.intake.setPower(0);
         }
-        if(currentGamepad1.dpad_left && !previousGamepad1.dpad_left){
-            Timer1.reset();
-            outtake.Jump1();
-            jumped1 = true;
-
-        }
-        if(jumped1 && Timer1.time()>=1){
-            outtake.Low1();
-            jumped1 = false;
-        }
-        if(currentGamepad1.dpad_right && !previousGamepad1.dpad_right){
-            Timer2.reset();
-            outtake.Jump2();
-            jumped2 = true;
-        }
-        if(jumped2 && Timer2.time()>1){
-            outtake.Low2();
-            jumped2 = false;
-        }
 
 
+        if(currentGamepad1.right_bumper &&  !previousGamepad1.right_bumper){
+            outtake.ShootGreen();
+        }
+        if(currentGamepad1.left_bumper &&  !previousGamepad1.left_bumper){
+            outtake.ShootPurple();
+        }
 
+        if(gamepad1.dpadUpWasPressed()){
+            outtake.moveFJ1();
+        }
 
-        if (gamepad1.right_bumper) {
-            outtake.Stop2();
+        if(gamepad1.dpadDownWasPressed()){
+            outtake.moveBJ1();
         }
-        if (gamepad1.right_trigger>0.3) {
-            outtake.Shoot2();
+
+        if(gamepad1.dpadLeftWasPressed()){
+            outtake.moveFJ2();
         }
-        if(gamepad1.left_bumper){
-            outtake.Stop1();
-        }
-        if(gamepad1.left_trigger>0.3){
-            outtake.Shoot1();
+
+        if(gamepad1.dpadRightWasPressed()){
+            outtake.moveBJ2();
         }
 
 
@@ -139,6 +129,9 @@ public class Teleop extends OpMode {
         double putere = intake.intake.getPower();
         telemetry.addData("poz2: ", pos2);
         telemetry.addData("putere: ", putere);
+        telemetry.addData("motor timer ",  outtake.Motor1Timer);
+        telemetry.addData("jumper1 ", outtake.getJ1());
+        telemetry.addData("jumper2 ", outtake.getJ2());
         telemetry.update();
         outtake.Update();
 

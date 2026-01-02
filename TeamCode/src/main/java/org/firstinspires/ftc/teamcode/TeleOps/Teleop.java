@@ -51,6 +51,7 @@ public class Teleop extends OpMode {
     }
     @Override
     public void init() {
+        outtake.IsAuto = false;
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();

@@ -51,7 +51,9 @@ public class Outtake extends SubsystemBase {
     public enum MotorState{
         OFF,
         STANDBY,
-        READY
+        READY,
+        SPEEDING_UP,
+        SLOWING_DOWN
 
     }
     public enum ShootState{
@@ -61,6 +63,7 @@ public class Outtake extends SubsystemBase {
         WAIT
 
     }
+    public boolean IsAuto = true;
     public ShootState Shoot1State,Shoot2State;
     public MotorState Motor1State = MotorState.OFF;
     public MotorState Motor2State = MotorState.OFF;
@@ -208,27 +211,46 @@ public class Outtake extends SubsystemBase {
             Low2();
             Jump2State = JumpState.IDLE;
         }
-        if(Motor1State == MotorState.READY && Motor1Timer.seconds()>10.0){
-            Stop1();
-            Motor1State = MotorState.OFF;
+        if(Motor1State == MotorState.READY && Shoot1State == ShootState.SHOOTED_GREEN && Shoot1Timer.seconds()>2.5){ // timerul e pt cat timp sa astepte pana verifica daca poate arunca din nou
+            if(OneCanShootGreen() && !IsAuto){
+                ShootGreen();
+            }else {
+                Stop1();
+                Motor1State = MotorState.OFF;
+                Shoot1State = ShootState.WAIT;
+            }
         }
-        if(Motor2State == MotorState.READY && Motor2Timer.seconds()>10.0){ //cat timp sta motorul pornit
+        if(Motor2State == MotorState.READY && Shoot2State == ShootState.SHOOTED_GREEN && Shoot2Timer.seconds()>2.5){
+            if(TwoCanShootGreen() && !IsAuto){
+                ShootGreen();
+            }
             Stop2();
             Motor2State = MotorState.OFF;
+            Shoot2State = ShootState.WAIT;
         }
-        if(OneCanShootGreen() && Shoot1State == ShootState.WAIT && RPM1>2200){ // cat asteapta ca motorul sa ajung la viteza necesara, o sa verificam si strict
+        if(Motor1State == MotorState.SPEEDING_UP && RPM1 > 2000){
+            Motor1State = MotorState.READY;
+        }
+        if(Motor2State == MotorState.SPEEDING_UP && RPM2 > 2000){
+            Motor2State = MotorState.READY;
+        }
+        if(OneCanShootGreen() && Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY){// cat asteapta ca motorul sa ajung la viteza necesara, o sa verificam si strict
+            Shoot1Timer.reset();
             StartJump1();
             Shoot1State = ShootState.SHOOTED_GREEN;
         }
-        if(TwoCanShootGreen() && Shoot2State == ShootState.WAIT && RPM2>2200){
+        if(TwoCanShootGreen() && Shoot2State == ShootState.WAIT && Motor2State == MotorState.READY){
+            Shoot2Timer.reset();
             StartJump2();
             Shoot2State = ShootState.SHOOTED_GREEN;
         }
-        if(OneCanShootPurple() && Shoot1State == ShootState.WAIT && RPM1>2200){
+        if(OneCanShootPurple() && Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY){
+            Shoot1Timer.reset();
             StartJump1();
             Shoot1State = ShootState.SHOOTED_PURPLE;
         }
-        if(TwoCanShootPurple() && Shoot2State == ShootState.WAIT && RPM2>2200){
+        if(TwoCanShootPurple() && Shoot2State == ShootState.WAIT && Motor2State == MotorState.READY){
+            Shoot2Timer.reset();
             StartJump2();
             Shoot2State = ShootState.SHOOTED_PURPLE;
         }
@@ -236,37 +258,36 @@ public class Outtake extends SubsystemBase {
 
     public void ShootGreen(){
         if(OneCanShootGreen()){
-            Shoot1Timer.reset();
             AutoShoot1();
             Shoot1State = ShootState.WAIT;
         }else if(TwoCanShootGreen()){
-            Shoot2Timer.reset();
             AutoShoot2();
             Shoot2State = ShootState.WAIT;
         }
     }
     public void ShootPurple(){
         if(OneCanShootPurple()){
-            Shoot1Timer.reset();
             AutoShoot1();
             Shoot1State = ShootState.WAIT;
         }else if(TwoCanShootPurple()){
-            Shoot2Timer.reset();
             AutoShoot2();
             Shoot2State = ShootState.WAIT;
         }
     }
 
     public void AutoShoot1(){
-        if(Motor1State == MotorState.READY) return;
+        if(RPM1 > 2000){
+            Motor1State = MotorState.READY;
+            return;
+        }
         Shoot1();
-        Motor1Timer.reset();
-        Motor1State = MotorState.READY;
+        //Motor1Timer.reset();
+        Motor1State = MotorState.SPEEDING_UP;
     }
     public void AutoShoot2(){
         if(Motor2State == MotorState.READY) return;
         Shoot2();
-        Motor2Timer.reset();
+        //Motor2Timer.reset();
         Motor2State = MotorState.READY;
     }
 

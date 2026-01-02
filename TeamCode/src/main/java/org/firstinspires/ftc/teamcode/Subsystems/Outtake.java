@@ -25,6 +25,7 @@ public class Outtake extends SubsystemBase {
     public DcMotorEx motor_shooter_1,motor_shooter_2;
     double k1=1.03,k2=1.03,r=0.048;
 
+
     NormalizedColorSensor colorSensor1;
     NormalizedColorSensor colorSensor2;
     Servo jumper1,jumper2,angler;
@@ -57,13 +58,33 @@ public class Outtake extends SubsystemBase {
 
     }
     public enum ShootState{
-        SHOOTED_GREEN,
-        SHOOTED_PURPLE,
+        SHOT_GREEN,
+        SHOT_PURPLE,
         UNAVAILABLE,
         WAIT
 
     }
+    public enum PatternStates{ //21 - GPP, 22 - PGP, 23 - PPG
+        IDLE,
+        SHOOTING_GREEN,
+        SHOT_GREEN,
+        SHOOTING_PURPLE1,
+        SHOT_PURPLE1,
+        SHOOTING_PURPLE2,
+        SHOT_PURPLE2
+    }
+    public enum Patterns{
+        GPP,
+        PGP,
+        PPG,
+        NOT_FOUND
+    }
     public boolean IsAuto = true;
+    public double TIME;
+    public boolean ShootingPattern = true;
+    public PatternStates patternStates;
+    public Patterns Pattern;
+    //Pattern = Limelight.getPattern() vedem mai incolo :))
     public ShootState Shoot1State,Shoot2State;
     public MotorState Motor1State = MotorState.OFF;
     public MotorState Motor2State = MotorState.OFF;
@@ -113,24 +134,24 @@ public class Outtake extends SubsystemBase {
             Telemetry telemetry,
             String name
     ) {
-            NormalizedRGBA colors = sensor.getNormalizedColors();
-            float[] hsv = new float[3];
-            Color.colorToHSV(colors.toColor(), hsv);
+        NormalizedRGBA colors = sensor.getNormalizedColors();
+        float[] hsv = new float[3];
+        Color.colorToHSV(colors.toColor(), hsv);
 
-            float hue = hsv[0];
-            float sat = hsv[1];
-            float val = hsv[2];
+        float hue = hsv[0];
+        float sat = hsv[1];
+        float val = hsv[2];
 
-            telemetry.addLine("--" + name + "--");
-            telemetry.addData("Hue_", hue);
-            telemetry.addData("Sat_", sat);
-            telemetry.addData("Val_", val);
+        telemetry.addLine("--" + name + "--");
+        telemetry.addData("Hue_", hue);
+        telemetry.addData("Sat_", sat);
+        telemetry.addData("Val_", val);
 
-            if (hue > 90 && hue < 180)
-                return DetectedColor.GREEN;
-            else if (hue > 220 && hue < 295)
-                return DetectedColor.PURPLE;
-            else return DetectedColor.UNKNOWN;
+        if (hue > 90 && hue < 180)
+            return DetectedColor.GREEN;
+        else if (hue > 220 && hue < 295)
+            return DetectedColor.PURPLE;
+        else return DetectedColor.UNKNOWN;
     }
     public DetectedColor getDetectedColor1(Telemetry t){
         return detectColor(colorSensor1, t, "Sensor 1");
@@ -139,12 +160,12 @@ public class Outtake extends SubsystemBase {
         return detectColor(colorSensor2, t, "Sensor 2");
     }
     public void OuttakeData(Telemetry t){
-         current1 = motor_shooter_1.getCurrent(CurrentUnit.MILLIAMPS);
-         currentAlert1 = motor_shooter_1.getCurrentAlert(CurrentUnit.MILLIAMPS);
-         Ticks1 = motor_shooter_1.getVelocity();
-         RPM1 = (Ticks1/28)*60;
-         AngularSpeed1 = motor_shooter_1.getVelocity(AngleUnit.RADIANS);
-         LiniarSpeed1 = k1*AngularSpeed1*r;
+        current1 = motor_shooter_1.getCurrent(CurrentUnit.MILLIAMPS);
+        currentAlert1 = motor_shooter_1.getCurrentAlert(CurrentUnit.MILLIAMPS);
+        Ticks1 = motor_shooter_1.getVelocity();
+        RPM1 = (Ticks1/28)*60;
+        AngularSpeed1 = motor_shooter_1.getVelocity(AngleUnit.RADIANS);
+        LiniarSpeed1 = k1*AngularSpeed1*r;
 
         t.addLine("--Motor 1--");
         t.addData("Current (mA)", "%.1f", current1);
@@ -155,12 +176,12 @@ public class Outtake extends SubsystemBase {
         t.addData("Linear Speed (m/s)", "%.2f", LiniarSpeed1);
 
 
-         current2 = motor_shooter_2.getCurrent(CurrentUnit.MILLIAMPS);
-         currentAlert2 = motor_shooter_2.getCurrentAlert(CurrentUnit.MILLIAMPS);
-         Ticks2 = motor_shooter_2.getVelocity();
-         RPM2 = (Ticks2/28)*60;
-         AngularSpeed2 = motor_shooter_2.getVelocity(AngleUnit.RADIANS);
-         LiniarSpeed2 = k2*AngularSpeed2*r;
+        current2 = motor_shooter_2.getCurrent(CurrentUnit.MILLIAMPS);
+        currentAlert2 = motor_shooter_2.getCurrentAlert(CurrentUnit.MILLIAMPS);
+        Ticks2 = motor_shooter_2.getVelocity();
+        RPM2 = (Ticks2/28)*60;
+        AngularSpeed2 = motor_shooter_2.getVelocity(AngleUnit.RADIANS);
+        LiniarSpeed2 = k2*AngularSpeed2*r;
 
         t.addLine("--Motor 2--");
         t.addData("Current (mA)", "%.1f", current2);
@@ -170,8 +191,8 @@ public class Outtake extends SubsystemBase {
         t.addData("Angular Speed (rad/s)", "%.2f", AngularSpeed2);
         t.addData("Linear Speed (m/s)", "%.2f", LiniarSpeed1);
 
-         color1 = getDetectedColor1(t);
-         color2 = getDetectedColor2(t);
+        color1 = getDetectedColor1(t);
+        color2 = getDetectedColor2(t);
 
         t.addData("Sensor 1", "%s", color1);
         t.addData("Sensor 2", "%s", color2);
@@ -203,6 +224,11 @@ public class Outtake extends SubsystemBase {
     }*/ //nu folosim cred
 
     public void Update(){ //valorile cu secundele trebuie reglate
+        if(!IsAuto){
+            TIME = 2.0;
+        }else{
+            TIME = 0.5;
+        }
         if(Jump1State == JumpState.JUMPING && Jump1Timer.seconds()>0.5){
             Low1();
             Jump1State = JumpState.IDLE;
@@ -211,18 +237,42 @@ public class Outtake extends SubsystemBase {
             Low2();
             Jump2State = JumpState.IDLE;
         }
-        if(Motor1State == MotorState.READY && Shoot1State == ShootState.SHOOTED_GREEN && Shoot1Timer.seconds()>2.5){ // timerul e pt cat timp sa astepte pana verifica daca poate arunca din nou
+        if(Motor1State == MotorState.READY && Shoot1State == ShootState.SHOT_GREEN && Shoot1Timer.seconds()>TIME){ // timerul e pt cat timp sa astepte pana verifica daca poate arunca din nou
             if(OneCanShootGreen() && !IsAuto){
-                ShootGreen();
+                ShootGreen(false); //nu trebuie in auto asta gen tre sa fie false
             }else {
                 Stop1();
                 Motor1State = MotorState.OFF;
                 Shoot1State = ShootState.WAIT;
             }
         }
-        if(Motor2State == MotorState.READY && Shoot2State == ShootState.SHOOTED_GREEN && Shoot2Timer.seconds()>2.5){
+        if(Motor1State == MotorState.READY && Shoot1State == ShootState.SHOT_PURPLE && Shoot1Timer.seconds()>TIME){
+            if(patternStates == PatternStates.SHOT_PURPLE1){
+                ShootPurple(ShootingPattern);
+            }
+            if(OneCanShootPurple() && !IsAuto){
+                ShootPurple(ShootingPattern);
+            }else {
+                Stop1();
+                Motor1State = MotorState.OFF;
+                Shoot1State = ShootState.WAIT;
+            }
+        }
+
+        if(Motor2State == MotorState.READY && Shoot2State == ShootState.SHOT_GREEN && Shoot2Timer.seconds()>TIME){
             if(TwoCanShootGreen() && !IsAuto){
-                ShootGreen();
+                ShootGreen(false);
+            }
+            Stop2();
+            Motor2State = MotorState.OFF;
+            Shoot2State = ShootState.WAIT;
+        }
+        if(Motor2State == MotorState.READY && Shoot2State == ShootState.SHOT_PURPLE && Shoot2Timer.seconds()>TIME){
+            if(patternStates == PatternStates.SHOT_PURPLE1){
+                ShootPurple(ShootingPattern);
+            }
+            if(TwoCanShootPurple() && !IsAuto){
+                ShootPurple(ShootingPattern);
             }
             Stop2();
             Motor2State = MotorState.OFF;
@@ -237,42 +287,103 @@ public class Outtake extends SubsystemBase {
         if(OneCanShootGreen() && Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY){// cat asteapta ca motorul sa ajung la viteza necesara, o sa verificam si strict
             Shoot1Timer.reset();
             StartJump1();
-            Shoot1State = ShootState.SHOOTED_GREEN;
+            Shoot1State = ShootState.SHOT_GREEN;
         }
         if(TwoCanShootGreen() && Shoot2State == ShootState.WAIT && Motor2State == MotorState.READY){
             Shoot2Timer.reset();
             StartJump2();
-            Shoot2State = ShootState.SHOOTED_GREEN;
+            Shoot2State = ShootState.SHOT_GREEN;
         }
         if(OneCanShootPurple() && Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY){
             Shoot1Timer.reset();
             StartJump1();
-            Shoot1State = ShootState.SHOOTED_PURPLE;
+            Shoot1State = ShootState.SHOT_PURPLE;
         }
         if(TwoCanShootPurple() && Shoot2State == ShootState.WAIT && Motor2State == MotorState.READY){
             Shoot2Timer.reset();
             StartJump2();
-            Shoot2State = ShootState.SHOOTED_PURPLE;
+            Shoot2State = ShootState.SHOT_PURPLE;
+        }
+        if (Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY && patternStates == PatternStates.SHOOTING_GREEN) {
+            Shoot1Timer.reset();
+            StartJump1();
+            Shoot1State = ShootState.SHOT_GREEN;
+        }
+        if (Shoot2State == ShootState.WAIT && Motor1State == MotorState.READY && patternStates == PatternStates.SHOOTING_GREEN) {
+            Shoot2Timer.reset();
+            StartJump2();
+            Shoot2State = ShootState.SHOT_GREEN;
+        }
+        if(Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY && patternStates == PatternStates.SHOOTING_PURPLE1){
+            Shoot1Timer.reset();
+            StartJump1();
+            Shoot1State = ShootState.SHOT_PURPLE;
+            patternStates = PatternStates.SHOT_PURPLE1;
+        }
+        if(Shoot2State == ShootState.WAIT && Motor2State == MotorState.READY && patternStates == PatternStates.SHOOTING_PURPLE1){
+            Shoot2Timer.reset();
+            StartJump2();
+            Shoot2State = ShootState.SHOT_PURPLE;
+            patternStates = PatternStates.SHOT_PURPLE1;
         }
     }
 
-    public void ShootGreen(){
+    public void ShootPattern(){
+        switch (Pattern) {
+            case GPP:
+                ShootGreen(ShootingPattern);
+                ShootPurple(ShootingPattern);
+                ShootPurple(ShootingPattern);
+                break;
+        }
+    }
+    public void ShootGreen(boolean shootingPattern){
+        if(shootingPattern){
+            if(OneCanShootGreen()){
+            AutoShoot1();
+            Shoot1State = ShootState.WAIT;
+            patternStates = PatternStates.SHOOTING_GREEN;
+            }else if(TwoCanShootGreen()){
+                AutoShoot2();
+                Shoot2State = ShootState.WAIT;
+                patternStates = PatternStates.SHOOTING_GREEN;
+            }
+        }else{
         if(OneCanShootGreen()){
             AutoShoot1();
             Shoot1State = ShootState.WAIT;
         }else if(TwoCanShootGreen()){
             AutoShoot2();
             Shoot2State = ShootState.WAIT;
-        }
+        }}
     }
-    public void ShootPurple(){
+    public void ShootPurple(boolean shootingPattern){
+        if(shootingPattern){
+            if(OneCanShootPurple()){
+            AutoShoot1();
+            Shoot1State = ShootState.WAIT;
+            if(patternStates == PatternStates.SHOT_PURPLE1){
+                patternStates = PatternStates.SHOOTING_PURPLE2;
+            }else {
+                patternStates = PatternStates.SHOOTING_PURPLE1;
+            }
+            }else if(TwoCanShootPurple()){
+                AutoShoot2();
+                Shoot2State = ShootState.WAIT;
+                if(patternStates == PatternStates.SHOT_PURPLE1){
+                    patternStates = PatternStates.SHOOTING_PURPLE2;
+                }else {
+                    patternStates = PatternStates.SHOOTING_PURPLE1;
+                }
+            }
+        }else {
         if(OneCanShootPurple()){
             AutoShoot1();
             Shoot1State = ShootState.WAIT;
         }else if(TwoCanShootPurple()){
             AutoShoot2();
             Shoot2State = ShootState.WAIT;
-        }
+        }}
     }
 
     public void AutoShoot1(){
@@ -285,10 +396,13 @@ public class Outtake extends SubsystemBase {
         Motor1State = MotorState.SPEEDING_UP;
     }
     public void AutoShoot2(){
-        if(Motor2State == MotorState.READY) return;
+        if(RPM2 > 2000){
+            Motor2State = MotorState.READY;
+            return;
+        }
         Shoot2();
         //Motor2Timer.reset();
-        Motor2State = MotorState.READY;
+        Motor2State = MotorState.SPEEDING_UP;
     }
 
 
@@ -304,7 +418,6 @@ public class Outtake extends SubsystemBase {
         Jump2Timer.reset();
         Jump2State = JumpState.JUMPING;
     }
-
 
 
     public double AnglePoz(){

@@ -101,10 +101,10 @@ public class Teleop extends OpMode {
 
 
         if(currentGamepad1.right_bumper &&  !previousGamepad1.right_bumper){
-            outtake.ShootGreen();
+            outtake.ShootGreen(true);
         }
         if(currentGamepad1.left_bumper &&  !previousGamepad1.left_bumper){
-            outtake.ShootPurple();
+            outtake.ShootPurple(true);
         }
 
         if(gamepad1.dpadUpWasPressed()){

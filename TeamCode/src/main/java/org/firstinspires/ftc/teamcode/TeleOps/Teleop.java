@@ -51,7 +51,6 @@ public class Teleop extends OpMode {
     }
     @Override
     public void init() {
-        outtake.IsAuto = false;
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
@@ -66,6 +65,7 @@ public class Teleop extends OpMode {
     @Override
     public void loop() {
         outtake.Update();
+        outtake.OuttakeData(telemetry);
 
         try {
             // Copiază gamepadurile pentru comparație între frame-uri
@@ -101,10 +101,10 @@ public class Teleop extends OpMode {
 
 
         if(currentGamepad1.right_bumper &&  !previousGamepad1.right_bumper){
-            outtake.ShootGreen(true);
+            outtake.ShootGreen();
         }
         if(currentGamepad1.left_bumper &&  !previousGamepad1.left_bumper){
-            outtake.ShootPurple(true);
+            outtake.ShootPurple();
         }
 
         if(gamepad1.dpadUpWasPressed()){
@@ -122,9 +122,16 @@ public class Teleop extends OpMode {
         if(gamepad1.dpadRightWasPressed()){
             outtake.moveBJ2();
         }
+        if(gamepad1.xWasPressed()){
+            if(outtake.Pattern != Outtake.Patterns.IDLE){
+                outtake.Pattern = Outtake.Patterns.IDLE;
+            }else outtake.Pattern = Outtake.Patterns.GPP;
+        }
+        if(gamepad1.aWasPressed()){
+            outtake.patternState = Outtake.PatternState.SHOOT_GREEN;
+        }
 
 
-        outtake.OuttakeData(telemetry);
 
         double pos2 = sorter.getPos();
         double putere = intake.intake.getPower();

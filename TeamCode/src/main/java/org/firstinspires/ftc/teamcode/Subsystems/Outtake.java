@@ -25,11 +25,10 @@ public class Outtake extends SubsystemBase {
     public DcMotorEx motor_shooter_1,motor_shooter_2;
     double k1=1.03,k2=1.03,r=0.048;
 
-
     NormalizedColorSensor colorSensor1;
     NormalizedColorSensor colorSensor2;
     Servo jumper1,jumper2,angler;
-    double P1 = 20,P2 = 20,F1=30,F2=30;
+    double P1 = 14,P2 = 15,F1=21,F2=17.1020;
     double LOW1 = 0.59,JUMP1 = 0.34;
     double LOW2 = 0.25,JUMP2 = 0.45;
     //please baga valoare
@@ -58,33 +57,34 @@ public class Outtake extends SubsystemBase {
 
     }
     public enum ShootState{
+        READY,
         SHOT_GREEN,
         SHOT_PURPLE,
         UNAVAILABLE,
         WAIT
 
     }
-    public enum PatternStates{ //21 - GPP, 22 - PGP, 23 - PPG
-        IDLE,
-        SHOOTING_GREEN,
-        SHOT_GREEN,
-        SHOOTING_PURPLE1,
-        SHOT_PURPLE1,
-        SHOOTING_PURPLE2,
-        SHOT_PURPLE2
-    }
     public enum Patterns{
         GPP,
         PGP,
-        PPG,
-        NOT_FOUND
+        PGG,
+        IDLE
     }
+    public enum PatternState{
+        IDLE,
+        SHOOT_GREEN,
+        SHOT_GREEN,
+        SHOOT_PURPLE1,
+        SHOT_PURPLE1,
+        SHOOT_PURPLE2,
+        SHOT_PURPLE2
+    }
+    public double SHOT_DELAY = 2.0;
+    public double SHOT_DELAY2 = 3.5;
+    public Patterns Pattern = Patterns.IDLE;
+    public PatternState patternState = PatternState.IDLE;
+
     public boolean IsAuto = true;
-    public double TIME;
-    public boolean ShootingPattern = true;
-    public PatternStates patternStates;
-    public Patterns Pattern;
-    //Pattern = Limelight.getPattern() vedem mai incolo :))
     public ShootState Shoot1State,Shoot2State;
     public MotorState Motor1State = MotorState.OFF;
     public MotorState Motor2State = MotorState.OFF;
@@ -93,6 +93,7 @@ public class Outtake extends SubsystemBase {
     public JumpState Jump2State = JumpState.IDLE;
     private ElapsedTime Jump1Timer,Jump2Timer;
     private ElapsedTime Shoot1Timer,Shoot2Timer;
+    public ElapsedTime PatternTime;
     public Outtake (HardwareMap hw){
         Jump1Timer = new ElapsedTime();
         Jump2Timer = new ElapsedTime();
@@ -100,6 +101,7 @@ public class Outtake extends SubsystemBase {
         Motor2Timer = new ElapsedTime();
         Shoot1Timer = new ElapsedTime();
         Shoot2Timer = new ElapsedTime();
+        PatternTime = new ElapsedTime();
 
         motor_shooter_1 = hw.get(DcMotorEx.class, "MotorShooter_2");
         motor_shooter_1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -201,6 +203,11 @@ public class Outtake extends SubsystemBase {
         t.addData("Shooter Poz","%f",anglePoz);
         t.addData("Jumper1","%f",jumper1.getPosition());
 
+        t.addData("PatternState",patternState);
+        t.addData("ShootState1",Shoot1State);
+        t.addData("ShootState2",Shoot2State);
+        t.addData("Pattern",Pattern);
+
     }
     /*public double getHoodAngle(double anglePoz){
         if (AnglerPozToHoodAngle.isEmpty()) {
@@ -224,34 +231,17 @@ public class Outtake extends SubsystemBase {
     }*/ //nu folosim cred
 
     public void Update(){ //valorile cu secundele trebuie reglate
-        if(!IsAuto){
-            TIME = 2.0;
-        }else{
-            TIME = 0.5;
-        }
-        if(Jump1State == JumpState.JUMPING && Jump1Timer.seconds()>0.5){
+        if(Jump1State == JumpState.JUMPING && Jump1Timer.seconds()>0.3){
             Low1();
             Jump1State = JumpState.IDLE;
         }
-        if(Jump2State == JumpState.JUMPING && Jump2Timer.seconds()>0.5){
+        if(Jump2State == JumpState.JUMPING && Jump2Timer.seconds()>0.3){
             Low2();
             Jump2State = JumpState.IDLE;
         }
-        if(Motor1State == MotorState.READY && Shoot1State == ShootState.SHOT_GREEN && Shoot1Timer.seconds()>TIME){ // timerul e pt cat timp sa astepte pana verifica daca poate arunca din nou
+        if(Motor1State == MotorState.READY && Shoot1State == ShootState.READY && Shoot1Timer.seconds()>2.5){ // timerul e pt cat timp sa astepte pana verifica daca poate arunca din nou
             if(OneCanShootGreen() && !IsAuto){
-                ShootGreen(false); //nu trebuie in auto asta gen tre sa fie false
-            }else {
-                Stop1();
-                Motor1State = MotorState.OFF;
-                Shoot1State = ShootState.WAIT;
-            }
-        }
-        if(Motor1State == MotorState.READY && Shoot1State == ShootState.SHOT_PURPLE && Shoot1Timer.seconds()>TIME){
-            if(patternStates == PatternStates.SHOT_PURPLE1){
-                ShootPurple(ShootingPattern);
-            }
-            if(OneCanShootPurple() && !IsAuto){
-                ShootPurple(ShootingPattern);
+                ShootGreen();
             }else {
                 Stop1();
                 Motor1State = MotorState.OFF;
@@ -259,131 +249,224 @@ public class Outtake extends SubsystemBase {
             }
         }
 
-        if(Motor2State == MotorState.READY && Shoot2State == ShootState.SHOT_GREEN && Shoot2Timer.seconds()>TIME){
+        if(Motor1State == MotorState.READY && Shoot1State == ShootState.SHOT_GREEN && Shoot1Timer.seconds()>2.5){ // timerul e pt cat timp sa astepte pana verifica daca poate arunca din nou
+                Stop1();
+                Motor1State = MotorState.OFF;
+                Shoot1State = ShootState.WAIT;
+
+        }
+        if(Motor1State == MotorState.READY && Shoot1State == ShootState.SHOT_PURPLE && Shoot1Timer.seconds()>2.5){ // timerul e pt cat timp sa astepte pana verifica daca poate arunca din nou
+            Stop1();
+            Motor1State = MotorState.OFF;
+            Shoot1State = ShootState.WAIT;
+
+        }
+        if(Motor2State == MotorState.READY && Shoot2State == ShootState.SHOT_GREEN && Shoot2Timer.seconds()>2.5){ // timerul e pt cat timp sa astepte pana verifica daca poate arunca din nou
+            Stop2();
+            Motor2State = MotorState.OFF;
+            Shoot2State = ShootState.WAIT;
+
+        }
+        if(Motor2State == MotorState.READY && Shoot2State == ShootState.SHOT_PURPLE && Shoot2Timer.seconds()>2.5){ // timerul e pt cat timp sa astepte pana verifica daca poate arunca din nou
+            Stop2();
+            Motor2State = MotorState.OFF;
+            Shoot2State = ShootState.WAIT;
+
+        }
+
+        if(Motor1State == MotorState.READY && Shoot1State == ShootState.READY && Shoot1Timer.seconds()>2.5){
+            if(OneCanShootPurple() && !IsAuto){
+                ShootPurple();
+            }else{
+                Stop1();
+                Motor1State = MotorState.OFF;
+                Shoot1State = ShootState.WAIT;
+
+            }
+        }
+        if(Motor2State == MotorState.READY && Shoot2State == ShootState.READY && Shoot2Timer.seconds()>2.5){
             if(TwoCanShootGreen() && !IsAuto){
-                ShootGreen(false);
+                ShootGreen();
             }
             Stop2();
             Motor2State = MotorState.OFF;
             Shoot2State = ShootState.WAIT;
         }
-        if(Motor2State == MotorState.READY && Shoot2State == ShootState.SHOT_PURPLE && Shoot2Timer.seconds()>TIME){
-            if(patternStates == PatternStates.SHOT_PURPLE1){
-                ShootPurple(ShootingPattern);
-            }
+        if (Motor2State == MotorState.READY && Shoot2State == ShootState.READY && Shoot2Timer.seconds() > 3.5) {
             if(TwoCanShootPurple() && !IsAuto){
-                ShootPurple(ShootingPattern);
+                ShootPurple();
             }
             Stop2();
             Motor2State = MotorState.OFF;
             Shoot2State = ShootState.WAIT;
+
         }
-        if(Motor1State == MotorState.SPEEDING_UP && RPM1 > 2000){
+        if(Motor1State == MotorState.SPEEDING_UP && RPM1 > 2800){
             Motor1State = MotorState.READY;
         }
-        if(Motor2State == MotorState.SPEEDING_UP && RPM2 > 2000){
+        if(Motor2State == MotorState.SPEEDING_UP && RPM2 > 2800){
             Motor2State = MotorState.READY;
         }
         if(OneCanShootGreen() && Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY){// cat asteapta ca motorul sa ajung la viteza necesara, o sa verificam si strict
             Shoot1Timer.reset();
             StartJump1();
-            Shoot1State = ShootState.SHOT_GREEN;
+            if(patternState == PatternState.IDLE){
+                Shoot1State = ShootState.SHOT_GREEN;
+            }
+          //  Shoot1State = ShootState.SHOT_GREEN;
         }
         if(TwoCanShootGreen() && Shoot2State == ShootState.WAIT && Motor2State == MotorState.READY){
             Shoot2Timer.reset();
             StartJump2();
-            Shoot2State = ShootState.SHOT_GREEN;
+            if(patternState == PatternState.IDLE){
+                Shoot2State = ShootState.SHOT_GREEN;
+            }
+         //   Shoot2State = ShootState.SHOT_GREEN;
         }
         if(OneCanShootPurple() && Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY){
             Shoot1Timer.reset();
             StartJump1();
-            Shoot1State = ShootState.SHOT_PURPLE;
+            if(patternState == PatternState.IDLE){
+                Shoot1State = ShootState.SHOT_PURPLE;
+            }
+           // Shoot1State = ShootState.SHOT_PURPLE;
         }
         if(TwoCanShootPurple() && Shoot2State == ShootState.WAIT && Motor2State == MotorState.READY){
             Shoot2Timer.reset();
             StartJump2();
-            Shoot2State = ShootState.SHOT_PURPLE;
+            if(patternState == PatternState.IDLE){
+                Shoot2State = ShootState.SHOT_PURPLE;
+            }
+           // Shoot2State = ShootState.SHOT_PURPLE;
         }
-        if (Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY && patternStates == PatternStates.SHOOTING_GREEN) {
-            Shoot1Timer.reset();
-            StartJump1();
-            Shoot1State = ShootState.SHOT_GREEN;
+
+        switch (Pattern) {
+            case GPP:
+                handleGPP();
+                break;
+
         }
-        if (Shoot2State == ShootState.WAIT && Motor1State == MotorState.READY && patternStates == PatternStates.SHOOTING_GREEN) {
-            Shoot2Timer.reset();
-            StartJump2();
-            Shoot2State = ShootState.SHOT_GREEN;
-        }
-        if(Shoot1State == ShootState.WAIT && Motor1State == MotorState.READY && patternStates == PatternStates.SHOOTING_PURPLE1){
-            Shoot1Timer.reset();
-            StartJump1();
-            Shoot1State = ShootState.SHOT_PURPLE;
-            patternStates = PatternStates.SHOT_PURPLE1;
-        }
-        if(Shoot2State == ShootState.WAIT && Motor2State == MotorState.READY && patternStates == PatternStates.SHOOTING_PURPLE1){
-            Shoot2Timer.reset();
-            StartJump2();
-            Shoot2State = ShootState.SHOT_PURPLE;
-            patternStates = PatternStates.SHOT_PURPLE1;
+    }
+    private void handleGPP(){
+        switch (patternState){
+
+            case IDLE:
+
+                break;
+            case SHOOT_GREEN:
+                ShootGreen();
+                PatternTime.reset();        // resetezi la începutul pattern-ului
+                patternState = PatternState.SHOT_GREEN;
+                break;
+
+            case SHOT_GREEN:
+                if(PatternTime.seconds() > SHOT_DELAY){
+                    patternState = PatternState.SHOOT_PURPLE1;
+                }
+                break;
+
+            case SHOOT_PURPLE1:
+                ShootPurple();
+                PatternTime.reset();        // resetam timerul doar la START-ul SHOT_PURPLE1
+                patternState = PatternState.SHOT_PURPLE1;
+                break;
+
+            case SHOT_PURPLE1:
+                if(PatternTime.seconds() > SHOT_DELAY){
+                    patternState = PatternState.SHOOT_PURPLE2;
+                }
+                break;
+
+            case SHOOT_PURPLE2:
+                ShootPurple();
+              /*  if(Jump1State == JumpState.IDLE){
+                    StartJump1();
+                } else if(Jump2State == JumpState.IDLE){
+                    StartJump2();
+                }
+
+               */
+                PatternTime.reset();
+                patternState = PatternState.SHOT_PURPLE2;
+                break;
+
+            case SHOT_PURPLE2:
+                if(PatternTime.seconds() > SHOT_DELAY2){
+                    patternState = PatternState.IDLE;
+                    Pattern = Patterns.IDLE; // pattern terminat
+                    Shoot1State = ShootState.READY;
+                    Shoot2State = ShootState.READY;
+                }
+                break;
+
+
+//            case SHOOT_GREEN:
+//                ShootGreen();
+//                PatternTime.reset();
+//                patternState = PatternState.SHOT_GREEN;
+//                break;
+//
+//            case SHOT_GREEN:
+//                if(PatternTime.seconds() > SHOT_DELAY){
+//                    patternState = PatternState.SHOOT_PURPLE1;
+//                }
+//                break;
+//
+//            case SHOOT_PURPLE1:
+//                ShootPurple();
+//                PatternTime.reset();
+//                patternState = PatternState.SHOT_PURPLE1;
+//                break;
+//
+//            case SHOT_PURPLE1:
+//                if(PatternTime.seconds() > SHOT_DELAY){
+//                    patternState = PatternState.SHOOT_PURPLE2;
+//                }
+//                break;
+//
+//            case SHOOT_PURPLE2:
+//                ShootPurple();
+//                if(OneCanShootPurple()){
+//                    Jump1();
+//                }else if(TwoCanShootPurple()){
+//                    Jump2();
+//                }
+//                PatternTime.reset();
+//                patternState = PatternState.SHOT_PURPLE2;
+//                break;
+//
+//            case SHOT_PURPLE2:
+//                if(PatternTime.seconds() > SHOT_DELAY2){
+//                    patternState = PatternState.IDLE;
+//                    Pattern = Patterns.IDLE; // pattern terminat
+//                }
+//                break;
         }
     }
 
-    public void ShootPattern(){
-        switch (Pattern) {
-            case GPP:
-                ShootGreen(ShootingPattern);
-                ShootPurple(ShootingPattern);
-                ShootPurple(ShootingPattern);
-                break;
-        }
-    }
-    public void ShootGreen(boolean shootingPattern){
-        if(shootingPattern){
-            if(OneCanShootGreen()){
-            AutoShoot1();
-            Shoot1State = ShootState.WAIT;
-            patternStates = PatternStates.SHOOTING_GREEN;
-            }else if(TwoCanShootGreen()){
-                AutoShoot2();
-                Shoot2State = ShootState.WAIT;
-                patternStates = PatternStates.SHOOTING_GREEN;
-            }
-        }else{
+
+
+    public void ShootGreen(){
         if(OneCanShootGreen()){
             AutoShoot1();
+            Shoot1Timer.reset();
             Shoot1State = ShootState.WAIT;
         }else if(TwoCanShootGreen()){
             AutoShoot2();
+            Shoot2Timer.reset();
             Shoot2State = ShootState.WAIT;
-        }}
+        }
     }
-    public void ShootPurple(boolean shootingPattern){
-        if(shootingPattern){
-            if(OneCanShootPurple()){
-            AutoShoot1();
-            Shoot1State = ShootState.WAIT;
-            if(patternStates == PatternStates.SHOT_PURPLE1){
-                patternStates = PatternStates.SHOOTING_PURPLE2;
-            }else {
-                patternStates = PatternStates.SHOOTING_PURPLE1;
-            }
-            }else if(TwoCanShootPurple()){
-                AutoShoot2();
-                Shoot2State = ShootState.WAIT;
-                if(patternStates == PatternStates.SHOT_PURPLE1){
-                    patternStates = PatternStates.SHOOTING_PURPLE2;
-                }else {
-                    patternStates = PatternStates.SHOOTING_PURPLE1;
-                }
-            }
-        }else {
+    public void ShootPurple(){
         if(OneCanShootPurple()){
             AutoShoot1();
+            Shoot1Timer.reset();
             Shoot1State = ShootState.WAIT;
         }else if(TwoCanShootPurple()){
             AutoShoot2();
+            Shoot2Timer.reset();
             Shoot2State = ShootState.WAIT;
-        }}
+        }
     }
 
     public void AutoShoot1(){
@@ -395,8 +478,9 @@ public class Outtake extends SubsystemBase {
         //Motor1Timer.reset();
         Motor1State = MotorState.SPEEDING_UP;
     }
+
     public void AutoShoot2(){
-        if(RPM2 > 2000){
+        if(RPM2 > 2000) {
             Motor2State = MotorState.READY;
             return;
         }
@@ -420,21 +504,22 @@ public class Outtake extends SubsystemBase {
     }
 
 
+
     public double AnglePoz(){
         return angler.getPosition();
     }
 
     public void Shoot1(){
-        motor_shooter_1.setPower(1);
+        motor_shooter_1.setVelocity(550,AngleUnit.RADIANS);
     }
     public void Shoot2(){
-        motor_shooter_2.setPower(1);
+        motor_shooter_2.setVelocity(550,AngleUnit.RADIANS);
     }
     public void Stop1(){
-        motor_shooter_1.setPower(0);
+        motor_shooter_1.setVelocity(0,AngleUnit.RADIANS);
     }
     public void Stop2(){
-        motor_shooter_2.setPower(0);
+        motor_shooter_2.setVelocity(0,AngleUnit.RADIANS);
     }
     public void Low2(){
         jumper2.setPosition(LOW2);
@@ -494,4 +579,5 @@ public class Outtake extends SubsystemBase {
             return true;
         }else return false;
     }
+
 }

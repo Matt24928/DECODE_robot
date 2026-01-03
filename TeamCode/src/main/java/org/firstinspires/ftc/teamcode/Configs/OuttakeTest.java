@@ -30,7 +30,7 @@ public class OuttakeTest extends OpMode {
 
     @Override
     public void init(){
-        shooter = hardwareMap.get(DcMotorEx.class, "MotorShooter_1");
+        shooter = hardwareMap.get(DcMotorEx.class, "MotorShooter_2");
         shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         shooter.setDirection(DcMotorSimple.Direction.REVERSE);
         outtake = new Outtake(hardwareMap);
